@@ -357,7 +357,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
           <option value="100000" selected>100k</option>
           <option value="25000">25k</option>
         </select>
-        <span class="hint">fluid units one tank holds</span>
+        <span class="hint" id="tankhint">fluid units one tank holds</span>
       </div>
     </div>
   </div>
@@ -528,7 +528,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
 
 
 <footer>
-  Constants verified against Space Exploration 0.7.57 source: <code>scripts/launchpad.lua</code>, <code>prototypes/phase-1/entity/rocket-launch-pad.lua</code>, <code>prototypes/phase-1/entity/wide-beacon.lua</code>, <code>prototypes/phase-3/recipe.lua</code>, <code>prototypes/phase-1/item/resources.lua</code>, and <code>se-cargo-rocket-construction-helper</code> 2.0.1.
+  Constants verified against Space Exploration 0.7.57 source: <code>scripts/launchpad.lua</code>, <code>prototypes/phase-1/entity/rocket-launch-pad.lua</code>, <code>prototypes/phase-1/entity/wide-beacon.lua</code>, <code>prototypes/phase-1/entity/spaceship.lua</code>, <code>prototypes/phase-3/recipe.lua</code>, <code>prototypes/phase-1/item/resources.lua</code>, and <code>se-cargo-rocket-construction-helper</code> 2.0.1.
   <p style="margin-top:10px">An inserter works one lane, so whatever the belt carries, a single arm reaches half of it — two arms per belt, one on each side.</p>
   <p style="margin-top:10px">
     Source:
@@ -765,6 +765,12 @@ a{color:var(--steel);overflow-wrap:anywhere}
     $("belthint").textContent = beltHint("belt","beltmult");
     $("handhint").textContent = +$("beltmult").value > 1
       ? "items per stack-inserter swing" : "items per swing, unstacked";
+    // The 100k option is se-spaceship-rocket-booster-tank (spaceship.lua:117, volume 100*1000),
+    // filtered to se-liquid-rocket-fuel. It carries se_placement_restriction_text for
+    // tile-name.se-spaceship-floor, so it needs floor under it - but that floor can be laid on a
+    // planet and piped into ground machines, which is why it belongs on a ground calculator.
+    $("tankhint").textContent = +$("tank").value >= 100000
+      ? "spaceship booster tank, on spaceship floor" : "plain storage tank";
     $("padshint").textContent = !isFinite(m.minPads) ? "blank for the minimum"
       : !isFinite(v.pads) ? "auto: "+m.minPads
       : (!v.buf && v.pads < m.minPads) ? "under "+m.minPads+" — output shown is what you get"

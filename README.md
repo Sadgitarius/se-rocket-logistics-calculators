@@ -136,6 +136,12 @@ Everything is read out of the mod, nothing is estimated:
 | `rocket_capacity` | **500** slots, so a rocket is `500 × stack size` items | — |
 | `se-wide-beacon` | 15 module slots × 0.5 effectivity = **×7.5** | `prototypes/phase-1/entity/wide-beacon.lua:78,82` |
 | `se-wide-beacon-2` | 20 module slots × 0.5 effectivity = **×10** | `prototypes/phase-1/entity/wide-beacon.lua:102` |
+| `se-spaceship-rocket-booster-tank` | **100,000** fluid, filtered to liquid rocket fuel | `prototypes/phase-1/entity/spaceship.lua:117` |
+| `storage-tank` | **25,000** fluid, base game, unmodified by SE | — |
+
+The booster tank is placement-restricted to `se-spaceship-floor`, but that floor can be laid on a
+planet and piped into ground machines — which is why the 100k option belongs on a ground build and
+is the default.
 
 The compact beacons reach the same two multipliers — 10 slots at 0.75 and at 1.0 — so the beacon
 dropdown is a tier, not an entity. Speed is floored at −80%, which only matters with no beacon and
