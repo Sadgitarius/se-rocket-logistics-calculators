@@ -1047,8 +1047,7 @@ a{color:var(--steel)}
   });
 
   // apply() renders as a side effect, so only render here when there was nothing to restore.
-  if (loadLocal()) say("Restored your last settings");
-  else { render(); rrender(); }
+  if (!loadLocal()) { render(); rrender(); }
 })();
 </script>
 
