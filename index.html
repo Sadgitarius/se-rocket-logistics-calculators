@@ -299,6 +299,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
         <span class="hint" id="belthint">— /s</span>
       </div>
       <div class="field">
+        <label for="reuse">Reusability</label>
+        <input id="reuse" type="number" value="0.2" min="0.2" max="1" step="0.04">
+        <span class="hint">0.2 + 0.04 per researched level</span>
+      </div>
+      <div class="field">
         <label for="hand">Hand size</label>
         <input id="hand" type="number" value="16" min="1" step="1">
         <span class="hint" id="handhint">items per stack-inserter swing</span>
@@ -315,11 +320,6 @@ a{color:var(--steel);overflow-wrap:anywhere}
         <label for="geom">Arm cycle</label>
         <input id="geom" type="number" value="24" min="2" step="2">
         <span class="hint" id="geomhint">ticks per swing</span>
-      </div>
-      <div class="field">
-        <label for="reuse">Reusability</label>
-        <input id="reuse" type="number" value="0.2" min="0.2" max="1" step="0.04">
-        <span class="hint">0.2 + 0.04 per researched level</span>
       </div>
       <div class="field">
         <label for="tier">Module tier</label>
@@ -810,7 +810,6 @@ a{color:var(--steel);overflow-wrap:anywhere}
       // how it runs
       ["g2","Silo cycle", f(m.cycle,1), "s"],
       ["g2","Fill rate needed", f(m.needRate,0), "/s"],
-      ["g2","Launches", f(v.buf ? m.L*60 : m.eff/m.C*60, 2), "/min"],
       ["g2","Items / rocket", f(m.C,0), ""],
       // refuelling
       ["g3","Fuel refineries", f(m.refineries,0), ""],
@@ -969,7 +968,8 @@ a{color:var(--steel);overflow-wrap:anywhere}
       ["g2","Belts out", f(m.beltsOut,0), ""],
       // Same order as the sending side's last two cells, and no longer overlapping: the sections
       // are the "Packed parts" figure, so the other cell is the capsules alone - one per rocket.
-      ["g2","Packed parts", f(m.packed,2), "slots/s"],
+      // A packed section stacks to 1, so items and slots are the same number either way.
+      ["g2","Packed parts", f(m.packed,2), "/s"],
       ["g2","Capsules", f(m.caps,2), "/s"]
     ]);
     $("r_readout").innerHTML = cells.map(function(c){
