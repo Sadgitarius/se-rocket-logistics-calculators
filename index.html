@@ -231,7 +231,7 @@ header.top + section{padding-top:22px}   /* the masthead already carries the air
 .rowsblock{padding:20px 24px;border-bottom:1px solid var(--line)}
 .rowshead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .btn.mini{padding:4px 11px;font-size:.62rem}
-.rowcols,.row{display:grid;grid-template-columns:minmax(0,1fr) 96px 84px 34px;gap:8px;align-items:center}
+.rowcols,.row{display:grid;grid-template-columns:34px minmax(0,1fr) 96px 84px 34px;gap:8px;align-items:center}
 .rowcols{
   font-family:"IBM Plex Mono",monospace;font-size:.6rem;font-weight:600;letter-spacing:.1em;
   text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;
@@ -245,12 +245,68 @@ header.top + section{padding-top:22px}   /* the masthead already carries the air
 }
 .row input:focus{outline:2px solid var(--flare);outline-offset:1px;border-color:var(--flare)}
 .row .kill{
-  height:34px;border:1px solid var(--line);border-radius:3px;background:var(--panel);
-  color:var(--ink-3);cursor:pointer;font-size:1rem;line-height:1;padding:0;
+  height:34px;border:1px solid var(--clay);border-radius:3px;background:var(--panel);
+  color:var(--clay);cursor:pointer;font-size:1rem;line-height:1;padding:0;
 }
-.row .kill:hover{color:var(--clay);border-color:var(--clay)}
+.row .kill:hover{background:var(--clay-soft)}
 .row .kill:focus-visible{outline:2px solid var(--clay);outline-offset:2px}
 .rowsempty{color:var(--ink-3);font-size:.82rem}
+
+/* ---- item picker ---- */
+/* One sprite sheet, 32 columns of 32px cells. Each icon carries its grid position as --sx/--sy,
+   so the same two numbers work at any --cell size and mobile can shrink the whole set at once. */
+.ico{
+  --cell:32px;
+  width:var(--cell);height:var(--cell);flex:0 0 auto;border-radius:2px;
+  background-image:url(icons.png);background-repeat:no-repeat;
+  background-size:calc(var(--cell) * 32) auto;
+  background-position:calc(var(--sx) * var(--cell) * -1) calc(var(--sy) * var(--cell) * -1);
+}
+.ico.blank{background-image:none;background:var(--panel-2);border:1px dashed var(--line)}
+.namecell{position:relative;min-width:0}
+/* the same picker, dropped into a .field on the calculators */
+.itemfield{position:relative;display:flex;align-items:center;gap:7px;min-width:0}
+.itemfield .ico{--cell:26px}
+.itemfield input[type=text]{
+  font-family:"IBM Plex Mono",monospace;font-size:.92rem;font-weight:500;
+  background:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:3px;padding:7px 9px;width:100%;height:36px;min-width:0;
+  -webkit-appearance:none;-moz-appearance:none;appearance:none;
+}
+.itemfield .picker{left:33px}
+
+/* ---- key inputs ---- */
+/* Only the calculators' item and stack size: every other number there is derived from them. Same
+   border weight as any other field, just a brighter line, so it reads as a hint rather than an
+   alarm - and red only when it is actually empty. :placeholder-shown is the empty test, which is
+   why each of these carries a placeholder. */
+.field input.key,.itemfield input.key{border-color:var(--ink-3)}
+.field input.key:placeholder-shown,.itemfield input.key:placeholder-shown{border-color:var(--clay)}
+.field input.key:focus,.itemfield input.key:focus{border-color:var(--flare)}
+
+/* the clear cross, sitting inside the right end of an item field - borderless, so it reads as a
+   quiet affordance next to the row's own remove button rather than competing with it */
+.clearitem{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  width:20px;height:20px;padding:0;line-height:1;font-size:1rem;
+  border:0;border-radius:3px;background:none;color:var(--ink-3);cursor:pointer;
+}
+.clearitem:hover{color:var(--clay)}
+.clearitem:focus-visible{outline:2px solid var(--clay);outline-offset:1px}
+.itemfield input,.namecell input{padding-right:30px}
+.picker{
+  position:absolute;z-index:40;top:calc(100% + 4px);left:0;right:0;min-width:250px;
+  max-height:296px;overflow-y:auto;overscroll-behavior:contain;
+  background:var(--panel);border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow);
+}
+.pick{
+  display:flex;align-items:center;gap:10px;width:100%;padding:4px 9px;
+  background:none;border:0;text-align:left;color:var(--ink);cursor:pointer;font:inherit;
+}
+.pick:hover,.pick.on{background:var(--panel-2)}
+.pick .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.85rem}
+.pick .st{font-family:"IBM Plex Mono",monospace;font-size:.68rem;color:var(--ink-3);flex:0 0 auto}
+.picknote{padding:7px 10px;font-size:.74rem;color:var(--ink-3)}
 
 /* ---- timeline ---- */
 .timeline{padding:22px 24px;border-top:1px solid var(--line)}
@@ -290,7 +346,8 @@ a{color:var(--steel);overflow-wrap:anywhere}
   .inputs{padding:16px 14px;gap:14px 14px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
   .field input,.field select{height:42px}   /* a touch target, not a mouse target */
   .rowsblock{padding:16px 14px}
-  .rowcols,.row{grid-template-columns:minmax(0,1fr) 74px 62px 32px;gap:6px}
+  .rowcols,.row{grid-template-columns:26px minmax(0,1fr) 72px 60px 30px;gap:6px}
+  .ico{--cell:24px}
   .row input{height:38px;padding:6px 7px;font-size:.82rem}
   .row .kill{height:38px}
   .tabs{gap:18px;margin-top:28px}
@@ -406,11 +463,6 @@ a{color:var(--steel);overflow-wrap:anywhere}
         <span class="hint" id="beaconhint">module effect on the refinery</span>
       </div>
       <div class="field">
-        <label for="rt">Train round trip</label>
-        <input id="rt" type="number" value="180" min="10" step="10">
-        <span class="hint">seconds, for the parts train</span>
-      </div>
-      <div class="field">
         <label for="wagon">Wagon size</label>
         <input id="wagon" type="number" value="50" min="1" step="1">
         <span class="hint">slots; parts and capsules both stack to 1</span>
@@ -446,12 +498,24 @@ a{color:var(--steel);overflow-wrap:anywhere}
     <div class="inputs">
       <div class="field">
         <label for="thru">Throughput</label>
-        <input id="thru" type="number" value="" min="1" step="10" placeholder="—">
+        <input id="thru" class="key" type="number" value="720" min="1" step="10" placeholder="—">
         <span class="hint">items / second to export</span>
       </div>
       <div class="field">
+        <label for="item">Item</label>
+        <div class="itemfield" id="itemfield">
+          <span class="ico blank" id="itemicon"></span>
+          <input id="item" class="key" type="text" value="Iron plate" autocomplete="off"
+                 role="combobox" placeholder="—">
+          <button type="button" class="clearitem" id="itemclear" hidden
+                  title="Clear this item and its stack size" aria-label="Clear item">×</button>
+          <input type="hidden" id="itemkey" value="iron-plate">
+        </div>
+        <span class="hint">sets the stack size below</span>
+      </div>
+      <div class="field">
         <label for="stack">Stack size</label>
-        <input id="stack" type="number" value="100" min="1" max="1000" step="1">
+        <input id="stack" class="key" type="number" value="100" min="1" max="1000" step="1" placeholder="—">
         <span class="hint">the number that drives everything</span>
       </div>
       <div class="field">
@@ -473,7 +537,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
         <span class="hint">space refineries cannot take productivity</span>
       </div>
       <div class="field">
-        <label for="secarms">Section feed</label>
+        <label for="secarms">Parts feed</label>
         <select id="secarms">
           <option value="bots" selected>Robots</option>
           <option value="1">1 inserter</option>
@@ -481,7 +545,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
           <option value="3">3 inserters</option>
           <option value="4">4 inserters</option>
         </select>
-        <span class="hint" id="secarmshint">time to land 100 sections + 1 capsule</span>
+        <span class="hint" id="secarmshint">time to land 100 parts + 1 capsule</span>
       </div>
     </div>
 
@@ -491,11 +555,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
       <div class="eyebrow" style="margin-bottom:9px">One silo cycle — <span id="cyclelen" class="mono"></span></div>
       <div class="bar" id="bar"></div>
       <div class="legend">
-        <span><i style="background:#7a5a86"></i>Ascent lockout — sections still queue</span>
+        <span><i style="background:#7a5a86"></i>Ascent lockout — parts still queue</span>
         <span><i style="background:var(--steel)"></i>Silo animation</span>
         <span><i style="background:var(--flare)"></i>Filling 500 stacks</span>
       </div>
-      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">cycle = max(18.33, section delivery) + max(15, 500 × stack ÷ fill rate)</p>
+      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">cycle = max(18.33, parts delivery) + max(15, 500 × stack ÷ fill rate)</p>
     </div>
   </div>
 </section>
@@ -510,12 +574,24 @@ a{color:var(--steel);overflow-wrap:anywhere}
     <div class="inputs">
       <div class="field">
         <label for="r_thru">Consumption</label>
-        <input id="r_thru" type="number" value="" min="1" step="10" placeholder="—">
+        <input id="r_thru" class="key" type="number" value="720" min="1" step="10" placeholder="—">
         <span class="hint">items / second the belts take away</span>
       </div>
       <div class="field">
+        <label for="r_item">Item</label>
+        <div class="itemfield" id="r_itemfield">
+          <span class="ico blank" id="r_itemicon"></span>
+          <input id="r_item" class="key" type="text" value="Iron plate" autocomplete="off"
+                 role="combobox" placeholder="—">
+          <button type="button" class="clearitem" id="r_itemclear" hidden
+                  title="Clear this item and its stack size" aria-label="Clear item">×</button>
+          <input type="hidden" id="r_itemkey" value="iron-plate">
+        </div>
+        <span class="hint">sets the stack size below</span>
+      </div>
+      <div class="field">
         <label for="r_stack">Stack size</label>
-        <input id="r_stack" type="number" value="100" min="1" max="1000" step="1">
+        <input id="r_stack" class="key" type="number" value="100" min="1" max="1000" step="1" placeholder="—">
         <span class="hint">the number that drives everything</span>
       </div>
       <div class="field">
@@ -552,34 +628,60 @@ a{color:var(--steel);overflow-wrap:anywhere}
   <div class="sechead"><span class="eyebrow">Composite cell</span><span class="rule"></span></div>
   <div class="panel calc">
 
+    <div class="inputs">
+      <div class="field">
+        <label for="c_unit">Show rates</label>
+        <select id="c_unit">
+          <option value="60" selected>Per minute</option>
+          <option value="1">Per second</option>
+        </select>
+        <span class="hint">landings and launches stay per minute</span>
+      </div>
+      <div class="field">
+        <label for="rt">Train ride time</label>
+        <input id="rt" type="number" value="180" min="10" step="10">
+        <span class="hint">seconds for one full round trip</span>
+      </div>
+    </div>
+
     <div class="rowsblock">
       <div class="rowshead">
         <span class="eyebrow">Imports · rockets landing here</span>
         <button type="button" class="btn ok mini" id="add_imp">Add</button>
       </div>
-      <div class="rowcols"><span>Item</span><span>Rate /s</span><span>Stack</span><span></span></div>
+      <div class="rowcols"><span></span><span>Item</span><span>Rate /s</span><span>Stack</span><span></span></div>
       <div class="rows" id="rows_imp"></div>
     </div>
 
     <div class="rowsblock">
       <div class="rowshead">
         <span class="eyebrow">Exports · rockets launching from here</span>
-        <button type="button" class="btn accent mini" id="add_exp">Add</button>
+        <button type="button" class="btn ok mini" id="add_exp">Add</button>
       </div>
-      <div class="rowcols"><span>Item</span><span>Rate /s</span><span>Stack</span><span></span></div>
+      <div class="rowcols"><span></span><span>Item</span><span>Rate /s</span><span>Stack</span><span></span></div>
       <div class="rows" id="rows_exp"></div>
     </div>
 
     <div class="readout" id="c_readout"></div>
 
     <div class="timeline">
-      <div class="eyebrow" style="margin-bottom:9px">Section balance — <span id="c_verdict" class="mono"></span></div>
+      <div class="eyebrow" style="margin-bottom:9px">Packaged parts balance — <span id="c_verdict" class="mono"></span></div>
       <div class="bar" id="c_bar"></div>
       <div class="legend">
-        <span><i style="background:var(--sage)"></i>Sections recovered from landings</span>
-        <span><i style="background:var(--clay)"></i>Sections burned by launches</span>
+        <span><i style="background:var(--sage)"></i>Packaged parts recovered from landings</span>
+        <span><i style="background:var(--clay)"></i>Packaged parts burned by launches</span>
       </div>
-      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">sections = 100 × (reusability × landings − launches) · capsules = landings − launches</p>
+      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">packaged parts = 100 × (reusability × landings − launches) ÷ 5</p>
+    </div>
+
+    <div class="timeline">
+      <div class="eyebrow" style="margin-bottom:9px">Capsule balance — <span id="c_capverdict" class="mono"></span></div>
+      <div class="bar" id="c_capbar"></div>
+      <div class="legend">
+        <span><i style="background:var(--sage)"></i>Capsules recovered from landings</span>
+        <span><i style="background:var(--clay)"></i>Capsules burned by launches</span>
+      </div>
+      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">capsules = landings − launches · one each way, whatever the reusability</p>
     </div>
   </div>
 </section>
@@ -650,6 +752,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
 
 </div>
 
+<!-- 750 items with their real stack sizes and a sprite index, generated from Factorio's own
+     --dump-data with this mod set loaded. Loaded as a script rather than fetched so the page
+     still works opened straight off disk, where fetch() is blocked by CORS. -->
+<script src="items.js"></script>
+
 <script>
 (function(){
   // ---- constants, all source- or measurement-backed ----
@@ -696,8 +803,9 @@ a{color:var(--steel);overflow-wrap:anywhere}
   // Three groups now. G_IDS live in the Global settings panel and feed BOTH calculators, so they
   // re-render both; S_IDS and R_IDS belong to one side each. The Buffer toggles stay local - they
   // describe how that side is built, not the world it is built in.
-  var G_IDS = ["belt","beltmult","adj","geom","hand","tier","beacon","reuse","wagon","tank"];
-  var S_IDS = ["thru","stack","trip","pads","env","secarms","rt"];
+  var G_IDS = ["belt","beltmult","adj","geom","hand","tier","beacon","reuse","wagon","tank",
+               "rt","c_unit"];
+  var S_IDS = ["thru","stack","trip","pads","env","secarms"];
 
   // Arm cycle is only a choice if you run a mod that makes it one. Vanilla SE gives you the
   // 24-tick swing of a container on one side and a container on the other, so the field is locked
@@ -888,6 +996,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
 
     $("geomhint").textContent = fmt(m.perStore,1)+" /s from storage · "+fmt(m.perBelt,1)+
       " /s off a belt (+"+BELT_TICKS+" t"+(m.perBelt >= m.lane ? ", lane-capped" : "")+")";
+    repaintItem("item");
     $("belthint").textContent = beltHint("belt","beltmult");
     $("handhint").textContent = +$("beltmult").value > 1
       ? "items per stack-inserter swing" : "items per swing, unstacked";
@@ -897,7 +1006,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
     // planet and piped into ground machines, which is why it belongs on a ground calculator.
     $("tankhint").textContent = +$("tank").value >= 100000
       ? "spaceship booster tank, on spaceship floor" : "plain storage tank";
-    $("secarmshint").textContent = !isFinite(m.feed) ? "time to land 100 sections + 1 capsule"
+    $("secarmshint").textContent = !isFinite(m.feed) ? "time to land 100 parts + 1 capsule"
       : m.secArms > 0
         ? fmt(m.feed,1)+" s · "+SECTION_ITEMS+" swings ÷ "+m.secArms+" at "+fmt(v.geom,0)+
           " t; stack 1, so hand size cannot help"
@@ -949,7 +1058,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
       ["g3","Pads", f(m.landing,0), ""],
       ["g3","Rockets out : in", sized ? fmt(m.ratio,1)+" : 1" : "—", ""],
       // what the train brings
-      ["g4","Packed parts", f(m.wagPart,2), "wagons"],
+      ["g4","Packaged parts", f(m.wagPart,2), "wagons"],
       ["g4","Capsules", f(m.wagCap,3), "wagons"]
     ]);
     $("readout").innerHTML = cells.map(function(c){
@@ -963,7 +1072,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
     var buildOver = Math.max(0, m.overhead - LOCK);
     var segs = [
       ["lock","lockout "+fmt(LOCK,1)+"s", Math.min(m.overhead, LOCK)],
-      ["lock","sections +"+fmt(buildOver,1)+"s", buildOver],
+      ["lock","parts +"+fmt(buildOver,1)+"s", buildOver],
       ["anim","animation "+ANIM+"s", Math.min(ANIM, m.fill)],
       ["fill","fill "+fmt(Math.max(0,m.fill-ANIM),0)+"s", Math.max(0, m.fill-ANIM)]
     ];
@@ -1075,6 +1184,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
     var f = function(n,d){ return ok && isFinite(n) ? fmt(n,d) : "—"; };
     var st = function(n){ return ok && isFinite(n) ? fmt(Math.ceil(n / v.stack),0) : "—"; };
 
+    repaintItem("r_item");
     $("r_padshint").textContent = ok ? (isFinite(v.pads) ? "minimum is "+m.minPads : "auto: "+m.minPads)
                                      : "blank for the minimum";
     $("r_misshint").textContent = !isFinite(v.miss) ? "how many late arrivals the reserve covers"
@@ -1098,9 +1208,9 @@ a{color:var(--steel);overflow-wrap:anywhere}
       ["g2","Landing interval", f(m.interval,1), "s"],
       ["g2","Belts out", f(m.beltsOut,0), ""],
       // Same order as the sending side's last two cells, and no longer overlapping: the sections
-      // are the "Packed parts" figure, so the other cell is the capsules alone - one per rocket.
+      // are the "Packaged parts" figure, so the other cell is the capsules alone - one per rocket.
       // A packed section stacks to 1, so items and slots are the same number either way.
-      ["g2","Packed parts", f(m.packed,2), "/s"],
+      ["g2","Packaged parts", f(m.packed,2), "/s"],
       ["g2","Capsules", f(m.caps,2), "/s"]
     ]);
     $("r_readout").innerHTML = cells.map(function(c){
@@ -1154,21 +1264,81 @@ a{color:var(--steel);overflow-wrap:anywhere}
              wagCap:  Math.abs(capNet) * rt / wagon };        // capsules are stack 1
   }
 
+  // ---- item database ----
+  // items.js is generated from Factorio's own --dump-data with the SE mod set loaded, so the
+  // stack sizes are the game's rather than anybody's memory. If it fails to load the rows still
+  // work as plain text with a hand-typed stack size - the picker is a convenience, not a
+  // dependency. Match is on a lowercased, punctuation-free string so "ironpl" finds Iron plate
+  // and a bare "plate" finds it too.
+  var flat = function(s){ return String(s).toLowerCase().replace(/[^a-z0-9]/g, ""); };
+  var DB = (window.ITEMS || []).map(function(a){
+    return { key:a[0], label:a[1], stack:a[2], icon:a[3], hay:flat(a[1]) + " " + flat(a[0]) };
+  });
+  var BY_KEY = {};
+  DB.forEach(function(it){ BY_KEY[it.key] = it; });
+  var SHEET_COLS = (window.ITEM_SHEET && window.ITEM_SHEET.cols) || 32;
+
+  function paintIcon(el, idx){
+    if (idx === null || idx === undefined) { el.className = "ico blank"; return; }
+    el.className = "ico";
+    el.style.setProperty("--sx", idx % SHEET_COLS);
+    el.style.setProperty("--sy", Math.floor(idx / SHEET_COLS));
+  }
+
+  function search(q, limit){
+    var f = flat(q);
+    if (!f) return DB.slice(0, limit);
+    var starts = [], rest = [];
+    for (var i = 0; i < DB.length; i++) {
+      var at = DB[i].hay.indexOf(f);
+      if (at === 0) starts.push(DB[i]);
+      else if (at > 0) rest.push(DB[i]);
+      if (starts.length >= limit) break;
+    }
+    return starts.concat(rest).slice(0, limit);   // things the query starts sort first
+  }
+
   // ---- row editor ----
   // Rows are dynamic, so they cannot live in MAP the way the fixed controls do. They get their
   // own branch in collect()/apply() instead, with the same tolerance: a malformed row is skipped,
   // a missing list leaves what is on screen alone.
-  var ROWS = { imp: [ {label:"", rate:null, stack:100}, {label:"", rate:null, stack:100} ],
-               exp: [ {label:"", rate:null, stack:100} ] };
+  // A new line has no stack size on purpose: 100 is a guess, and a guessed stack size silently
+  // mis-sizes every rocket downstream. Empty reads as a dash and the field shows red until it
+  // is filled - by picking an item, or by hand.
+  var blankRow = function(){ return { key:null, label:"", rate:null, stack:null }; };
+  // Seeded with a recognisable 1:1:1 cell - two plates in, red science out - so the view shows
+  // real numbers on first open instead of a wall of dashes.
+  var itemRow = function(key, rate){
+    var it = BY_KEY[key];
+    return it ? { key:key, label:it.label, rate:rate, stack:it.stack }
+              : { key:null, label:"", rate:rate, stack:100 };
+  };
+  var ROWS = { imp: [ itemRow("copper-plate", 60), itemRow("iron-gear-wheel", 60) ],
+               exp: [ itemRow("automation-science-pack", 60) ] };
 
   function rowNode(kind, row){
     var wrap = document.createElement("div");
     wrap.className = "row";
 
+    var icon = document.createElement("span");
+    paintIcon(icon, row.key && BY_KEY[row.key] ? BY_KEY[row.key].icon : null);
+
+    var cellwrap = document.createElement("div");
+    cellwrap.className = "namecell";
+
     var name = document.createElement("input");
     name.type = "text";
-    name.placeholder = kind === "imp" ? "iron plate" : "beryllium ore";
+    name.placeholder = "—";
     name.value = row.label || "";
+    name.autocomplete = "off";
+    name.setAttribute("role", "combobox");
+    cellwrap.appendChild(name);
+
+    var cross = document.createElement("button");
+    cross.type = "button"; cross.className = "clearitem"; cross.textContent = "×";
+    cross.title = "Clear this item and its stack size";
+    cross.setAttribute("aria-label", "Clear item");
+    cellwrap.appendChild(cross);
 
     var rate = document.createElement("input");
     rate.type = "number"; rate.min = "0"; rate.step = "10";
@@ -1177,7 +1347,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
 
     var stack = document.createElement("input");
     stack.type = "number"; stack.min = "1"; stack.step = "1";
-    stack.placeholder = "100";
+    stack.placeholder = "—";
     stack.value = row.stack === null ? "" : String(row.stack);
 
     var kill = document.createElement("button");
@@ -1191,15 +1361,127 @@ a{color:var(--steel);overflow-wrap:anywhere}
       row.stack = stack.value === "" ? null : +stack.value;
       crender(); queueSave();
     };
-    [name, rate, stack].forEach(function(el){ el.addEventListener("input", pull); });
+    [rate, stack].forEach(function(el){ el.addEventListener("input", pull); });
     kill.addEventListener("click", function(){
+      closePicker();
       ROWS[kind].splice(ROWS[kind].indexOf(row), 1);
       drawRows(kind); crender(); queueSave();
     });
 
-    [name, rate, stack, kill].forEach(function(el){ wrap.appendChild(el); });
+    var showCross = function(){ cross.hidden = !row.key; };
+
+    // Typing is free text - the picker only offers. Anything typed that is not a known item
+    // clears the key, so the row keeps whatever stack size was entered by hand.
+    wirePicker(cellwrap, name, function(it){ choose(it); }, function(){
+      row.label = name.value;
+      row.key = null;
+      paintIcon(icon, null); showCross();
+      crender(); queueSave();
+    });
+
+    function choose(it){
+      row.key = it.key; row.label = it.label; row.stack = it.stack;
+      name.value = it.label;
+      stack.value = String(it.stack);
+      paintIcon(icon, it.icon);
+      closePicker(); showCross();
+      crender(); queueSave();
+    }
+
+    // Clearing an item takes its stack size with it - that number came from the item, and
+    // leaving it behind is how you end up sizing a rocket against the wrong stack.
+    cross.addEventListener("mousedown", function(e){
+      e.preventDefault();
+      row.key = null; row.label = ""; row.stack = null;
+      name.value = ""; stack.value = "";
+      paintIcon(icon, null); closePicker(); showCross();
+      crender(); queueSave();
+    });
+    showCross();
+
+    [icon, cellwrap, rate, stack, kill].forEach(function(el){ wrap.appendChild(el); });
     return wrap;
   }
+
+  // ---- the picker panel ----
+  // One panel, moved into whichever row is focused, so 750 items are never in the DOM twice.
+  var PICK_LIMIT = 200;
+  var picker = null, pickIdx = -1, pickOn = null;
+
+  function closePicker(){
+    if (picker && picker.parentNode) picker.parentNode.removeChild(picker);
+    pickIdx = -1; pickOn = null;
+  }
+
+  // Turn any text input into an item combobox. `onChoose` gets the picked item; `onType` fires
+  // on free typing, which is where the caller drops whatever it had resolved before.
+  function wirePicker(host, input, onChoose, onType){
+    input.addEventListener("focus", function(){ openPicker(host, input, onChoose); });
+    input.addEventListener("input", function(){
+      if (onType) onType();
+      openPicker(host, input, onChoose);
+    });
+    input.addEventListener("keydown", pickerKey);
+  }
+
+  function openPicker(host, input, onPick){
+    if (!DB.length) return;                       // items.js absent - stay a plain text field
+    if (!picker) { picker = document.createElement("div"); picker.className = "picker"; }
+    var hits = search(input.value, PICK_LIMIT);
+    picker.innerHTML = "";
+    pickIdx = -1;
+    pickOn = { input: input, hits: hits, onPick: onPick };
+    if (!hits.length) {
+      var none = document.createElement("div");
+      none.className = "picknote";
+      none.textContent = "No item matches — the text is kept as typed.";
+      picker.appendChild(none);
+    }
+    hits.forEach(function(it, i){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "pick";
+      var ic = document.createElement("span"); paintIcon(ic, it.icon);
+      var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = it.label;
+      var st = document.createElement("span"); st.className = "st"; st.textContent = "×" + it.stack;
+      b.appendChild(ic); b.appendChild(nm); b.appendChild(st);
+      // mousedown, not click: the input blurs before click would land
+      b.addEventListener("mousedown", function(e){ e.preventDefault(); onPick(it); });
+      b.addEventListener("mouseenter", function(){ highlight(i); });
+      picker.appendChild(b);
+    });
+    if (hits.length === PICK_LIMIT) {
+      var more = document.createElement("div");
+      more.className = "picknote";
+      more.textContent = "More matches than shown — keep typing to narrow it.";
+      picker.appendChild(more);
+    }
+    host.appendChild(picker);
+  }
+
+  function highlight(i){
+    if (!picker) return;
+    var opts = picker.querySelectorAll(".pick");
+    if (pickIdx >= 0 && opts[pickIdx]) opts[pickIdx].className = "pick";
+    pickIdx = i;
+    if (opts[i]) { opts[i].className = "pick on"; opts[i].scrollIntoView({block:"nearest"}); }
+  }
+
+  function pickerKey(e){
+    if (!picker || !pickOn) return;
+    var n = pickOn.hits.length;
+    if (e.key === "ArrowDown" && n) { e.preventDefault(); highlight((pickIdx + 1) % n); }
+    else if (e.key === "ArrowUp" && n) { e.preventDefault(); highlight((pickIdx - 1 + n) % n); }
+    else if (e.key === "Enter") {
+      if (pickIdx >= 0) { e.preventDefault(); pickOn.onPick(pickOn.hits[pickIdx]); }
+      else closePicker();
+    }
+    else if (e.key === "Escape") { e.preventDefault(); closePicker(); }
+  }
+
+  document.addEventListener("mousedown", function(e){
+    if (!picker || !picker.parentNode) return;
+    if (!picker.parentNode.contains(e.target)) closePicker();
+  });
 
   function drawRows(kind){
     var host = $(kind === "imp" ? "rows_imp" : "rows_exp");
@@ -1215,7 +1497,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
   }
 
   function addRow(kind){
-    ROWS[kind].push({ label:"", rate:null, stack:100 });
+    ROWS[kind].push(blankRow());
     drawRows(kind); crender(); queueSave();
   }
 
@@ -1226,21 +1508,30 @@ a{color:var(--steel);overflow-wrap:anywhere}
     var live = ok && (m.land > 0 || m.launch > 0);
     var f = function(n,d){ return live && isFinite(n) ? fmt(n,d) : "—"; };
 
+    // Parts are shown as PACKAGED parts throughout - 5 rocket sections to one packed item
+    // (recipe/cargo-rocket.lua:128-135). The rocket burns raw sections, but everything this view
+    // is for - trains, stock, wagons - moves them packed, so that is the unit on screen.
+    // Every per-time figure below is scaled by the unit toggle. Landings and launches are NOT -
+    // rockets per second is an unreadable number, so they stay per minute either way. Wagon
+    // counts are per train ride, not a rate, so they are unitless and never scaled.
+    var U = +$("c_unit").value || 1;
+    var us = U === 60 ? "/min" : "/s";
+
     var surplus = m.secNet >= 0;
     var capSurplus = m.capNet >= 0;
-    var signed = function(n,d){ return live ? (n > 0 ? "+" : n < 0 ? "−" : "") + fmt(Math.abs(n),d) : "—"; };
+    var signed = function(n,d){ return live ? (n > 0 ? "+" : n < 0 ? "−" : "") + fmt(Math.abs(n*U),d) : "—"; };
 
     var cells = [
       ["hero g1" + (live ? (surplus ? " good" : " bad") : ""),
-       surplus ? "Section surplus" : "Section shortage", signed(m.secNet,1), "/s"],
+       surplus ? "Packaged parts surplus" : "Packaged parts shortage", signed(m.secNet/PACK), us],
       ["g1" + (live ? (capSurplus ? " good" : " bad") : ""),
-       capSurplus ? "Capsule surplus" : "Capsule shortage", signed(m.capNet,3), "/s"],
-      ["g1", "Parts train", f(m.wagPart,2), live ? (surplus ? "wagons out" : "wagons in") : ""],
+       capSurplus ? "Capsule surplus" : "Capsule shortage", signed(m.capNet), us],
+      ["g1", "Packaged parts train", f(m.wagPart,2), live ? (surplus ? "wagons out" : "wagons in") : ""],
       ["g1", "Capsule train", f(m.wagCap,3), live ? (capSurplus ? "wagons out" : "wagons in") : ""],
       ["g2", "Landings", f(m.land*60,2), "/min"],
       ["g2", "Launches", f(m.launch*60,2), "/min"],
-      ["g2", "Sections recovered", f(m.secIn,1), "/s"],
-      ["g2", "Sections burned", f(m.secOut,1), "/s"],
+      ["g2", "Packaged parts recovered", f(m.secIn*U/PACK), us],
+      ["g2", "Packaged parts burned", f(m.secOut*U/PACK), us],
       ["g3", "Break-even reusability",
        !live || !isFinite(m.breakEven) ? "—" : m.breakEven > 1 ? "out of reach" : fmt(m.breakEven,2),
        !live || !isFinite(m.breakEven) || m.breakEven > 1 ? "" : "vs " + fmt(reuse,2)]
@@ -1251,20 +1542,30 @@ a{color:var(--steel);overflow-wrap:anywhere}
              c[2] + (c[3] && !dash ? '<u>'+c[3]+'</u>' : '')+'</div></div>';
     }).join("");
 
-    // Recovered against burned, on one bar. Equal halves means the cell feeds itself.
-    var total = m.secIn + m.secOut;
-    $("c_bar").innerHTML = !live || total <= 0 ? "" :
-      [["gain", m.secIn, "recovered "+fmt(m.secIn,1)+"/s"],
-       ["loss", m.secOut, "burned "+fmt(m.secOut,1)+"/s"]]
-      .map(function(s){
-        var pct = 100*s[1]/total;
-        return pct <= 0 ? "" : '<div class="seg '+s[0]+'" style="flex:0 0 '+pct.toFixed(3)+'%">'+
-          (pct > 16 ? s[2] : "")+'</div>';
-      }).join("");
-    $("c_verdict").textContent = !live ? "—"
-      : Math.abs(m.secNet) < 1e-9 ? "balanced"
-      : surplus ? "surplus, ship " + fmt(m.secNet,1) + " sections/s out"
-                : "shortage, ship " + fmt(-m.secNet,1) + " sections/s in";
+    // Recovered against burned. Equal halves means the cell feeds itself. Two bars, because
+    // parts and capsules can point in opposite directions - that is the whole point of the view.
+    var bar = function(id, gain, loss, dp){
+      var total = gain + loss;
+      $(id).innerHTML = !live || total <= 0 ? "" :
+        [["gain", gain, "recovered " + fmt(gain*U,dp) + us],
+         ["loss", loss, "burned " + fmt(loss*U,dp) + us]]
+        .map(function(s){
+          var pct = 100*s[1]/total;
+          return pct <= 0 ? "" : '<div class="seg '+s[0]+'" style="flex:0 0 '+pct.toFixed(3)+'%">'+
+            (pct > 16 ? s[2] : "")+'</div>';
+        }).join("");
+    };
+    bar("c_bar", m.secIn/PACK, m.secOut/PACK);
+    bar("c_capbar", m.land, m.launch);
+
+    var verdict = function(net, noun, dp){
+      return !live ? "—"
+        : Math.abs(net) < 1e-9 ? "balanced"
+        : net > 0 ? "surplus, ship " + fmt(net*U,dp) + " " + noun + us + " out"
+                  : "shortage, ship " + fmt(-net*U,dp) + " " + noun + us + " in";
+    };
+    $("c_verdict").textContent = verdict(m.secNet/PACK, "packaged parts");
+    $("c_capverdict").textContent = verdict(m.capNet, "capsules");
   }
 
   // ---- view tabs ----
@@ -1291,6 +1592,46 @@ a{color:var(--steel);overflow-wrap:anywhere}
   $("adj").addEventListener("input", syncArm);
   $("beltmult").addEventListener("input", syncHand);
 
+  // The calculators get the same picker as the composite rows: choosing an item overwrites the
+  // stack size beside it, and after that the number is yours to change. Typing anything the
+  // list does not know just clears the icon and leaves the stack size alone.
+  function wireItemField(prefix, stackId, after){
+    var input = $(prefix), icon = $(prefix + "icon"), keyEl = $(prefix + "key");
+    var host = $(prefix + "field"), cross = $(prefix + "clear");
+    if (!input || !host) return;
+    var showCross = function(){ if (cross) cross.hidden = !keyEl.value; };
+    wirePicker(host, input,
+      function(it){
+        input.value = it.label;
+        keyEl.value = it.key;
+        $(stackId).value = String(it.stack);
+        paintIcon(icon, it.icon);
+        closePicker(); showCross();
+        after(); queueSave();
+      },
+      function(){ keyEl.value = ""; paintIcon(icon, null); showCross(); queueSave(); });
+    if (cross) {
+      // mousedown, not click: the input blurs first and the picker would swallow it
+      cross.addEventListener("mousedown", function(e){
+        e.preventDefault();
+        input.value = ""; keyEl.value = ""; $(stackId).value = "";
+        paintIcon(icon, null); closePicker(); showCross();
+        after(); queueSave();
+      });
+    }
+    showCross();
+  }
+  wireItemField("item", "stack", function(){ render(); });
+  wireItemField("r_item", "r_stack", function(){ rrender(); });
+
+  // Called from render()/rrender() so an import or a reset repaints the icon without extra wiring.
+  function repaintItem(prefix){
+    var el = $(prefix + "icon");
+    if (!el) return;
+    var it = BY_KEY[$(prefix + "key").value];
+    paintIcon(el, it ? it.icon : null);
+  }
+
   function renderAll(){ render(); rrender(); crender(); }
   G_IDS.forEach(function(id){ $(id).addEventListener("input", renderAll); });
   S_IDS.forEach(function(id){ $(id).addEventListener("input", render); });
@@ -1315,11 +1656,13 @@ a{color:var(--steel);overflow-wrap:anywhere}
   var MAP = {
     global: { beltSpeed:"belt", beltStacking:"beltmult", adjustableInserters:"adj",
               armCycle:"geom", handSize:"hand", moduleTier:"tier", beaconTier:"beacon",
-              reusability:"reuse", wagonSize:"wagon", fuelTankSize:"tank" },
-    send:   { throughput:"thru", stackSize:"stack", fuelPerTrip:"trip", silos:"pads",
-              location:"env", sectionFeed:"secarms", trainRoundTrip:"rt", buffer:"buf" },
-    recv:   { consumption:"r_thru", stackSize:"r_stack", pads:"r_pads", missedRockets:"r_miss",
-              buffer:"r_buf" }
+              reusability:"reuse", wagonSize:"wagon", fuelTankSize:"tank",
+              trainRoundTrip:"rt", rateUnit:"c_unit" },
+    send:   { throughput:"thru", stackSize:"stack", item:"item", itemKey:"itemkey",
+              fuelPerTrip:"trip", silos:"pads", location:"env", sectionFeed:"secarms",
+              buffer:"buf" },
+    recv:   { consumption:"r_thru", stackSize:"r_stack", item:"r_item", itemKey:"r_itemkey",
+              pads:"r_pads", missedRockets:"r_miss", buffer:"r_buf" }
   };
 
   function say(msg, bad){
@@ -1340,7 +1683,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
       });
     });
     // The composite rows are dynamic, so they are a list rather than a set of named controls.
-    var strip = function(r){ return { label:r.label || "", rate:r.rate, stack:r.stack }; };
+    // Only the internal item name is stored, never the sprite index - regenerating items.js
+    // renumbers the sheet, and a saved file has to survive that.
+    var strip = function(r){
+      return { key:r.key || null, label:r.label || "", rate:r.rate, stack:r.stack };
+    };
     out.settings.composite = { imports: ROWS.imp.map(strip), exports: ROWS.exp.map(strip) };
     return out;
   }
@@ -1387,8 +1734,14 @@ a{color:var(--steel);overflow-wrap:anywhere}
           };
           ROWS[pair[0]] = list
             .filter(function(r){ return r && typeof r === "object"; })
-            .map(function(r){ return { label: r.label == null ? "" : String(r.label),
-                                       rate: numOrNull(r.rate), stack: numOrNull(r.stack) }; });
+            .map(function(r){
+              var key = r.key && BY_KEY[r.key] ? r.key : null;
+              return { key: key,
+                       label: r.label == null ? (key ? BY_KEY[key].label : "") : String(r.label),
+                       rate: numOrNull(r.rate),
+                       stack: numOrNull(r.stack) === null && key ? BY_KEY[key].stack
+                                                                : numOrNull(r.stack) };
+            });
           drawRows(pair[0]); n++;
         });
       }
@@ -1425,14 +1778,14 @@ a{color:var(--steel);overflow-wrap:anywhere}
   var DEFAULTS = collect();
 
   function saveLocal(){
-    try { localStorage.setItem(STORE, JSON.stringify(collect())); } catch (err) {}
+    try { sessionStorage.setItem(STORE, JSON.stringify(collect())); } catch (err) {}
   }
   var saveTimer;
   function queueSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveLocal, 250); }
 
   function loadLocal(){
     var raw;
-    try { raw = localStorage.getItem(STORE); } catch (err) { return 0; }
+    try { raw = sessionStorage.getItem(STORE); } catch (err) { return 0; }
     if (!raw) return 0;
     try { return apply(JSON.parse(raw)) || 0; } catch (err) { return 0; }
   }
@@ -1450,7 +1803,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
   // there is still something worth remembering - save the new state rather than clearing it.
   $("btn_reset").addEventListener("click", function(){
     apply(DEFAULTS);
-    try { localStorage.removeItem(STORE); } catch (err) {}
+    try { sessionStorage.removeItem(STORE); } catch (err) {}
   });
 
   $("btn_reset_calc").addEventListener("click", function(){

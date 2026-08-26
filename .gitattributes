@@ -1,1 +1,6 @@
 * text=auto eol=lf
+
+# never let line-ending normalisation near the sprite sheet
+*.png binary
+*.jpg binary
+*.ico binary

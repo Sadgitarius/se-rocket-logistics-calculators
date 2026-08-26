@@ -9,9 +9,19 @@ No build step, no dependencies, no tracking — a single `index.html` you can op
 
 ## Global settings
 
-Anything that describes your world rather than one shipment lives in a panel above both
-calculators: belt speed and stacking, adjustable inserters, arm cycle, hand size, module tier,
-beacon tier, reusability, wagon size, fuel tank size. Change one and both sides re-render.
+Anything that describes your world rather than one shipment lives in a panel above every view:
+belt speed and stacking, reusability, hand size, adjustable inserters, arm cycle, module tier,
+beacon tier, wagon size, fuel tank size. Change one and every view re-renders.
+
+Both calculators also have an **item picker** beside the stack size: choose an item and its real
+stack size drops in, after which the number is yours to change.
+
+**Throughput, item and stack size are marked as key inputs** on the calculators — a slightly
+brighter border than the fields around them, turning **red while empty**, because every other
+number on that side is derived from them. A picked item carries a small cross at the end of the field; clicking it
+clears the item *and* erases the stack size, since that number came from the item and leaving it
+behind is how you end up sizing a rocket against the wrong stack. New composite lines start with
+no stack size for the same reason — a default of 100 is a guess, and a wrong guess is silent.
 
 Two of them move a default when you change them:
 
@@ -26,31 +36,47 @@ built in, and the two sides are frequently different.
 ## Composite cell
 
 The second view answers a different question: **does this site end up with a surplus or a
-shortage of rocket sections and capsules?** List everything that lands here and everything that
+shortage of parts and capsules?** List everything that lands here and everything that
 launches from here, each with its rate and stack size, and it tells you which way the parts train
-has to run and how many wagons it needs.
+has to run and how many wagons it needs, for the train ride time you set.
+
+Its own settings sit above the two lists: **Show rates** switches every rate between per second
+and per minute (landings and launches always read per minute, and wagon counts are per train ride
+rather than a rate, so neither follows the toggle), and **Train ride time** is what turns a
+surplus or shortage into a wagon count.
+
+Each line has an **item picker**: start typing and it filters 750 items by icon and name, and
+picking one fills the stack size for you. Matching ignores case, spaces and punctuation and hits
+anywhere in the string, so `ironpl`, `plate` and `iron-plate` all find Iron plate. Anything the
+list doesn't know still works as free text with a stack size you type yourself.
 
 It is one accounting identity, read out of `scripts/launchpad.lua`:
 
 ```
-launching a rocket costs  100 sections + 1 capsule          (:540, :577)
-a rocket landing brings   100 × reusability sections        (:1189-1191)
+launching a rocket costs  100 parts + 1 capsule             (:540, :577)
+a rocket landing brings   100 × reusability parts           (:1189-1191)
                         + 1 capsule, always                 (:1174)
 
-sections /s = 100 × (reusability × landings − launches)
+parts    /s = 100 × (reusability × landings − launches)
 capsules /s = landings − launches
 ```
+
+**The view shows packaged parts, not loose ones.** Five rocket sections make one packed item
+(`recipe/cargo-rocket.lua:128-135`), and everything this view exists for — trains, stock, wagons —
+moves them packed, so every parts figure on screen is the number above divided by 5. The sending
+side's **Parts feed** stays in loose parts, because that is what a silo actually swallows: one
+section per inserter swing, 101 swings a rocket.
 
 Two consequences worth knowing before you build:
 
 - **Capsules do not care about reusability.** The capsule insert on landing is unconditional, so
   capsule balance is purely how many rockets arrive versus leave. Launch more than you land and
   you need capsules shipped in, at any research level.
-- **Sections break even at `reusability = launches ÷ landings`.** The view prints that number.
+- **Parts break even at `reusability = launches ÷ landings`.** The view prints that number.
   If you launch more rockets than you receive it goes above 1 and reads *out of reach* — no
   amount of research will balance that site and the parts have to come in by train.
 
-Section recovery is `floor(min(used, used × reusability × (0.9 + 0.2 × random)))`, so individual
+Part recovery is `floor(min(used, used × reusability × (0.9 + 0.2 × random)))`, so individual
 rockets vary ±10%. The mean is `100 × reusability`, which is what the view uses.
 
 ## What it answers
@@ -70,7 +96,7 @@ The thing that surprises everyone: **a silo only accepts for about half of its c
 part of the feed upstream has to run well above the cell's average rate. At 1,584 /s with stack 200
 the silo needs ~2,623 /s during its 38 s fill window.
 
-**Section feed** is 101 items — 100 sections plus the capsule — and every one is stack size 1, so
+**Parts feed** is 101 items — 100 parts plus the capsule — and every one is stack size 1, so
 an inserter carries exactly one per swing and hand size cannot help. The feed is
 `101 × arm cycle ÷ 60 ÷ inserters`, which is why a fast arm can pull the cycle down to the
 18.33 s lockout floor and save a silo. The bot option is 35 s: a 30 s wave, plus the construction
@@ -85,7 +111,7 @@ A rocket lands, dumps 500 slots into a pad, and leaves. The page tells you:
 - **how many arms `pad → storage`** (this side has to be faster than `storage → belt`) and
   **`storage → belt`** — with no buffer there is no storage, so the first cell disappears and the
   second becomes `pad → belt`,
-- **landing interval**, belts out, and the section/capsule return rate your reusability level implies.
+- **landing interval**, belts out, and the packaged-parts/capsule return rate your reusability implies.
 
 A punctual line needs no reserve at all — over one interval, delivery and consumption cancel
 exactly. Every stack you keep is insurance against a rocket arriving late, so **Missed rockets**
@@ -94,7 +120,7 @@ consumption. Set it to 0 and the reserve disappears, leaving only what the fast 
 
 ## The Buffer toggles
 
-Each section has a **Buffer** switch in its header, on by default.
+Each calculator has a **Buffer** switch in its header, on by default.
 
 - **Sending, off** — you have no storage between the cell and the silos, so the cell can only push
   while a silo is open. The page solves for the actual effective throughput with the silos staggered.
@@ -117,9 +143,11 @@ ceiling of 480. Saturating any belt takes two arms, one per side.
 
 ## Saving your settings
 
-Everything you type is kept in the browser, so reloading the page brings your numbers back
-instead of emptying the form. It is per-browser and never leaves your machine — nothing is sent
-anywhere, and there is no account and no server-side state.
+Everything you type is kept in the tab's own `sessionStorage`, so reloading brings your numbers
+back instead of emptying the form — but a **new tab starts clean** rather than inheriting whatever
+you were last working on, and closing the tab forgets it. Nothing leaves your machine: no account,
+no server-side state, nothing sent anywhere. **Export is the durable copy** — use it for anything
+you want to keep.
 
 Three buttons at the top right:
 
@@ -199,6 +227,25 @@ angle, drop lane, and whether the arm is rotation- or extension-bound. One arm t
 **180 /s** on or off a belt, because it works a single lane.
 
 Belt figures come from the belt settings above, not from a fixed constant.
+
+## The item database
+
+`items.js` and `icons.png` are generated, not written. The build runs Factorio's own
+`--dump-data` with this mod set loaded and takes:
+
+- **stack sizes** straight from the item prototypes,
+- **English names** from the locale `.cfg` files in the base game and every mod (so SE's own
+  naming wins — beryllium ore is *Beryl*, naquium ore is *Naquitite*),
+- **icons** composited layer by layer out of the mod archives, tints and offsets included, into
+  one 32px sprite sheet.
+
+750 items, 1.7 MB of sheet. The sheet is only referenced from inside the picker, so it isn't
+fetched until you open the Composite view, and it's cached after that.
+
+To rebuild against a different mod set, see the header of [`tools/build-items.py`](tools/build-items.py).
+
+Saved settings store the **internal** item name, never the sprite index, so regenerating the
+sheet renumbers it without invalidating anyone's saved file.
 
 ## Running it locally
 
