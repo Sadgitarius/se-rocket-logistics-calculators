@@ -45,6 +45,54 @@ Each section has a **Buffer** switch in its header, on by default.
   with cargo *density*, so a small rocket landing often hurts more than a big one landing rarely —
   the inverse of the sending side.
 
+## Belt settings
+
+Both calculators take a **belt speed** (90 / 45 / 30 / 15 items per second, loose) and a
+**stacking** setting. Stacked means four layers, so a 90 /s deep-space belt carries 360 /s.
+
+The setting does two things. It sizes the belt count, and it caps the inserters — **an arm loads
+or unloads a single lane, so it can only ever reach half of what the belt carries.** On a stacked
+deep-space belt that lane is 180 /s, which is why a 2-tick arm measures 176 /s against a geometry
+ceiling of 480. Saturating any belt takes two arms, one per side.
+
+## Saving your settings
+
+Everything you type is kept in the browser, so reloading the page brings your numbers back
+instead of emptying the form. It is per-browser and never leaves your machine — nothing is sent
+anywhere, and there is no account and no server-side state.
+
+Three buttons at the top right:
+
+- **Export** — writes every setting on both calculators, including the Buffer switches, to a
+  small JSON file. Keep one per base, or paste one into a thread when you want someone to check
+  your numbers.
+- **Import** — loads a settings file back into both calculators.
+- **Reset** — puts every setting back to its default and forgets the saved ones. It asks first.
+
+Saved files — and the browser-local copy, which uses the same format — are built to survive later
+versions of this page:
+
+- settings are keyed by stable names, not by internal element ids
+- a setting **missing** from the file leaves that control at its default, so old files still load
+  after new fields are added
+- a setting the page **no longer has** is ignored, so files still load after fields are removed
+- a dropdown value that is no longer offered is skipped rather than forced, so a retired option
+  can never leave a control blank
+
+The worst case on import is a setting quietly staying at its default. It will not break the form.
+
+```json
+{
+  "app": "se-rocket-logistics-calculators",
+  "version": 1,
+  "saved": "2026-08-25T00:00:00.000Z",
+  "settings": {
+    "send": { "throughput": "1584", "stackSize": "200", "beltSpeed": "90", "beltStacking": "4", "buffer": true },
+    "recv": { "consumption": "523", "stackSize": "20", "beltSpeed": "90", "beltStacking": "4", "buffer": true }
+  }
+}
+```
+
 ## Constants
 
 Everything is read out of the mod, nothing is estimated:
@@ -73,7 +121,7 @@ across eight configurations from 2 to 30 ticks and never left 3.11–3.44 ticks;
 angle, drop lane, and whether the arm is rotation- or extension-bound. One arm tops out near
 **180 /s** on or off a belt, because it works a single lane.
 
-Belt trunk figures assume the white deep-space belt: 90 items/s loose, **360 stacked**.
+Belt figures come from the belt settings above, not from a fixed constant.
 
 ## Running it locally
 
@@ -85,18 +133,6 @@ If you want one anyway:
 python -m http.server 8000
 # then http://localhost:8000
 ```
-
-## Deploying to Render
-
-It is a static site with nothing to build. `render.yaml` in this repo covers it; if you set it up
-by hand in the dashboard instead:
-
-- **New → Static Site**, point it at this repo
-- **Build Command:** _(leave empty)_
-- **Publish Directory:** `.`
-
-Then put the resulting URL into the `og:url` meta tag near the top of `index.html` so Discord
-unfurls the link with a proper card.
 
 ## License
 

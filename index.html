@@ -8,12 +8,12 @@
 <meta name="theme-color" content="#101419" media="(prefers-color-scheme:dark)">
 <meta name="description" content="Sizing calculators for Space Exploration cargo rockets: how many silos, landing pads, inserters and buffer stacks a given throughput needs. Built on constants read out of the SE source, not estimated.">
 
-<!-- Discord / link unfurl. After the first deploy, set og:url to the live address. -->
+<!-- Discord / link unfurl -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="SE Rocket Logistics Calculators">
 <meta property="og:title" content="Rocket Logistics Calculators">
 <meta property="og:description" content="Sizing calculators for Space Exploration cargo rockets: silos, landing pads, inserters and buffer stacks for a given throughput.">
-<!-- <meta property="og:url" content="https://se-rocket-logistics-calculators.onrender.com/"> -->
+<meta property="og:url" content="https://se-rocket-logistics.onrender.com/">
 
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%9A%80%3C/text%3E%3C/svg%3E">
 <title>Rocket Logistics Calculators</title>
@@ -108,6 +108,26 @@ code,.mono,td.n,th.n{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;fo
 
 /* ---- masthead ---- */
 header.top{padding:56px 0 8px}
+.mast{display:flex;align-items:flex-end;justify-content:space-between;gap:14px 28px;flex-wrap:wrap}
+.actions{display:flex;align-items:center;gap:9px;padding-bottom:7px}
+.btn{
+  font-family:"IBM Plex Mono",monospace;font-size:.66rem;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-2);background:var(--panel);
+  border:1px solid var(--line);border-radius:2px;padding:6px 13px;cursor:pointer;
+  transition:background .14s,color .14s,border-color .14s;
+}
+.btn:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.btn.accent{color:var(--flare);border-color:var(--flare)}
+.btn.accent:hover{background:var(--flare-soft)}
+.btn.ok{color:var(--sage);border-color:var(--sage)}
+.btn.ok:hover{background:var(--sage-soft)}
+.btn.warn{color:var(--clay);border-color:var(--clay)}
+.btn.warn:hover{background:var(--clay-soft)}
+.actions .status{
+  font-family:"IBM Plex Mono",monospace;font-size:.68rem;color:var(--ink-3);
+  white-space:nowrap;text-align:right;
+}
+.actions .status.bad{color:var(--clay)}
 .kicker{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-bottom:20px}
 .kicker .tag{
   font-family:"IBM Plex Mono",monospace;font-size:.66rem;font-weight:600;letter-spacing:.14em;
@@ -213,7 +233,19 @@ a{color:var(--steel)}
   <div class="kicker">
     <span class="tag">Space Exploration 0.7.57</span>
   </div>
-  <h1>Rocket logistics calculators</h1>
+  <div class="mast">
+    <h1>Rocket logistics calculators</h1>
+    <div class="actions">
+      <span class="status" id="io_status" role="status" aria-live="polite"></span>
+      <button type="button" class="btn ok" id="btn_import"
+              title="Load a settings file back into both calculators">Import</button>
+      <button type="button" class="btn accent" id="btn_export"
+              title="Save every setting on both calculators to a JSON file">Export</button>
+      <button type="button" class="btn warn" id="btn_reset"
+              title="Put every setting back to its default and forget the saved ones">Reset</button>
+      <input type="file" id="file_import" accept="application/json,.json" hidden>
+    </div>
+  </div>
 </header>
 
 <section id="calc">
@@ -226,7 +258,7 @@ a{color:var(--steel)}
     <div class="inputs">
       <div class="field">
         <label for="thru">Throughput</label>
-        <input id="thru" type="number" value="" min="1" step="10" placeholder="â€”">
+        <input id="thru" type="number" value="" min="1" step="10" placeholder="—">
         <span class="hint">items / second to export</span>
       </div>
       <div class="field">
@@ -237,7 +269,7 @@ a{color:var(--steel)}
       <div class="field">
         <label for="trip">Fuel per trip</label>
         <input id="trip" type="number" value="100000" min="1000" step="5000">
-        <span class="hint">30k near Â· 150k far side</span>
+        <span class="hint">30k near · 150k far side</span>
       </div>
       <div class="field">
         <label for="pads">Silos</label>
@@ -303,19 +335,37 @@ a{color:var(--steel)}
         <input id="wagon" type="number" value="50" min="1" step="1">
         <span class="hint">slots; parts and capsules both stack to 1</span>
       </div>
+      <div class="field">
+        <label for="belt">Belt speed</label>
+        <select id="belt">
+          <option value="90" selected>90 /s</option>
+          <option value="45">45 /s</option>
+          <option value="30">30 /s</option>
+          <option value="15">15 /s</option>
+        </select>
+        <span class="hint">items / second before stacking</span>
+      </div>
+      <div class="field">
+        <label for="beltmult">Belt stacking</label>
+        <select id="beltmult">
+          <option value="4" selected>Yes</option>
+          <option value="1">No</option>
+        </select>
+        <span class="hint" id="belthint">— /s</span>
+      </div>
     </div>
 
     <div class="readout" id="readout"></div>
 
     <div class="timeline">
-      <div class="eyebrow" style="margin-bottom:9px">One silo cycle â€” <span id="cyclelen" class="mono"></span></div>
+      <div class="eyebrow" style="margin-bottom:9px">One silo cycle — <span id="cyclelen" class="mono"></span></div>
       <div class="bar" id="bar"></div>
       <div class="legend">
-        <span><i style="background:#7a5a86"></i>Ascent lockout â€” silo frozen, sections queue in the container</span>
+        <span><i style="background:#7a5a86"></i>Ascent lockout — silo frozen, sections queue in the container</span>
         <span><i style="background:var(--steel)"></i>Silo animation</span>
         <span><i style="background:var(--flare)"></i>Filling 500 stacks</span>
       </div>
-      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">cycle = max(18.33, section delivery) + max(15, 500 Ã— stack Ã· fill rate)</p>
+      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">cycle = max(18.33, section delivery) + max(15, 500 × stack ÷ fill rate)</p>
     </div>
   </div>
 </section>
@@ -330,7 +380,7 @@ a{color:var(--steel)}
     <div class="inputs">
       <div class="field">
         <label for="r_thru">Consumption</label>
-        <input id="r_thru" type="number" value="" min="1" step="10" placeholder="â€”">
+        <input id="r_thru" type="number" value="" min="1" step="10" placeholder="—">
         <span class="hint">items / second the belts take away</span>
       </div>
       <div class="field">
@@ -358,19 +408,37 @@ a{color:var(--steel)}
         <input id="r_reuse" type="number" value="0.2" min="0.2" max="1" step="0.04">
         <span class="hint">0.2 + 0.04 per researched level</span>
       </div>
+      <div class="field">
+        <label for="r_belt">Belt speed</label>
+        <select id="r_belt">
+          <option value="90" selected>90 /s</option>
+          <option value="45">45 /s</option>
+          <option value="30">30 /s</option>
+          <option value="15">15 /s</option>
+        </select>
+        <span class="hint">items / second before stacking</span>
+      </div>
+      <div class="field">
+        <label for="r_beltmult">Belt stacking</label>
+        <select id="r_beltmult">
+          <option value="4" selected>Yes</option>
+          <option value="1">No</option>
+        </select>
+        <span class="hint" id="r_belthint">— /s</span>
+      </div>
     </div>
 
     <div class="readout" id="r_readout"></div>
 
     <div class="timeline">
-      <div class="eyebrow" style="margin-bottom:9px">Buffer level over one landing interval â€” <span id="r_cyclelen" class="mono"></span></div>
+      <div class="eyebrow" style="margin-bottom:9px">Buffer level over one landing interval — <span id="r_cyclelen" class="mono"></span></div>
       <div class="bar" id="r_bar"></div>
       <div class="legend">
         <span><i style="background:var(--flare)"></i>Pad draining into storage</span>
         <span><i style="background:var(--steel)"></i>Storage feeding the belts alone</span>
         <span><i style="background:#7a5a86"></i>Reserve, eaten only when a rocket is late</span>
       </div>
-      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">capacity = consumption Ã— late-by + rocket Ã— (drain âˆ’ consumption) Ã· drain</p>
+      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">capacity = consumption × late-by + rocket × (drain − consumption) ÷ drain</p>
     </div>
   </div>
 </section>
@@ -385,34 +453,34 @@ a{color:var(--steel)}
   <div class="panel pad">
     <dl class="consts">
       <dt>rocket_capacity = 500</dt>
-      <dd>Slots in the launch pad, so a rocket carries <strong>500 Ã— stack size</strong> items. During the build, two slots are filter-reserved for a section and a capsule; both filters clear the moment the rocket completes, so a finished rocket ships all 500.</dd>
+      <dd>Slots in the launch pad, so a rocket carries <strong>500 × stack size</strong> items. During the build, two slots are filter-reserved for a section and a capsule; both filters clear the moment the rocket completes, so a finished rocket ships all 500.</dd>
 
       <dt>section stack_size = 1</dt>
-      <dd>100 sections is 100 inventory slots and, on an inserter feed, 100 separate swings â€” one arm at a 26-tick cycle needs 43 s. <code>se-cargo-rocket-section-packed</code> holds 5 sections in one slot, both stack size 1 â€” <strong>ship packed, unpack on site</strong> for 5Ã— the train density.</dd>
+      <dd>100 sections is 100 inventory slots and, on an inserter feed, 100 separate swings — one arm at a 26-tick cycle needs 43 s. <code>se-cargo-rocket-section-packed</code> holds 5 sections in one slot, both stack size 1 — <strong>ship packed, unpack on site</strong> for 5× the train density.</dd>
 
-      <dt>construction helper Â· item-request-proxy</dt>
-      <dd>Your build feeds sections by bot. <code>se-cargo-rocket-construction-helper</code> puts an <code>item-request-proxy</code> on the pad for the missing sections and capsule, and construction bots fill it in one wave â€” which is the 30 s you measured, not 100 swings. Two things to know: it polls on <code>on_nth_tick(600)</code>, so <strong>0â€“10 s of pure latency</strong> passes before the request even appears (the event-driven hook that would fire it instantly is commented out in 2.0.1), and the proxy claims <strong>specific slots, 498 counting down</strong>. Cargo sitting in those slots blocks the delivery.</dd>
+      <dt>construction helper · item-request-proxy</dt>
+      <dd>Your build feeds sections by bot. <code>se-cargo-rocket-construction-helper</code> puts an <code>item-request-proxy</code> on the pad for the missing sections and capsule, and construction bots fill it in one wave — which is the 30 s you measured, not 100 swings. Two things to know: it polls on <code>on_nth_tick(600)</code>, so <strong>0–10 s of pure latency</strong> passes before the request even appears (the event-driven hook that would fire it instantly is commented out in 2.0.1), and the proxy claims <strong>specific slots, 498 counting down</strong>. Cargo sitting in those slots blocks the delivery.</dd>
 
       <dt>time_takeoff_finish_ascent = 1100</dt>
       <dd><strong>18.33 s</strong>. The pad stays locked after launch until the ascent finishes; only then does <code>prep</code> resume taking sections. This is the hard floor of the cycle, not the "couple of seconds" it looks like. Inserters can still stuff sections into the container during the lockout, so a fast section feed hides entirely inside it.</dd>
 
       <dt>silo animation</dt>
-      <dd>Doors 4.25 s + three blinks + rise â‰ˆ <strong>15 s</strong> after the rocket completes, during which it cannot leave. Filling runs in parallel, so it only costs you when the cargo fills faster than 15 s.</dd>
+      <dd>Doors 4.25 s + three blinks + rise ≈ <strong>15 s</strong> after the rocket completes, during which it cannot leave. Filling runs in parallel, so it only costs you when the cargo fills faster than 15 s.</dd>
 
-      <dt>Launchpad.prep â€” every 60 ticks</dt>
-      <dd>Sections and capsules move from the container into the rocket once per second, in bulk. No throughput limit as long as there are free slots â€” which is exactly why the cargo arms must stay gated on <code>se-cargo-rocket = 1</code>. Fill the container first and sections trickle in through the single reserved slot at 1/s: a 100-second build. With a bot feed the gate matters even more, because the proxy needs 100 named slots free.</dd>
+      <dt>Launchpad.prep — every 60 ticks</dt>
+      <dd>Sections and capsules move from the container into the rocket once per second, in bulk. No throughput limit as long as there are free slots — which is exactly why the cargo arms must stay gated on <code>se-cargo-rocket = 1</code>. Fill the container first and sections trickle in through the single reserved slot at 1/s: a 100-second build. With a bot feed the gate matters even more, because the proxy needs 100 named slots free.</dd>
 
-      <dt>rocket_cost_p = 0.5 + 0.5 Ã— used/500</dt>
-      <dd>An empty rocket still costs <strong>50 sections and half the fuel</strong>. A half-full one costs 75 sections and 75% fuel â€” 1.5Ã— the cost per item. Only ever launch on <em>cargo full</em>.</dd>
+      <dt>rocket_cost_p = 0.5 + 0.5 × used/500</dt>
+      <dd>An empty rocket still costs <strong>50 sections and half the fuel</strong>. A half-full one costs 75 sections and 75% fuel — 1.5× the cost per item. Only ever launch on <em>cargo full</em>.</dd>
 
       <dt>fuel_per_delta_v = 8</dt>
-      <dd>Trip cost is pure delta-v: ~30k fuel near, ~150k across the system. The pad banks <code>required_fuel</code> plus whatever fits in its 11,000-unit tank and no more â€” surplus buffering belongs in your own tanks.</dd>
+      <dd>Trip cost is pure delta-v: ~30k fuel near, ~150k across the system. The pad banks <code>required_fuel</code> plus whatever fits in its 11,000-unit tank and no more — surplus buffering belongs in your own tanks.</dd>
 
       <dt>se-liquid-rocket-fuel</dt>
-      <dd>1 rocket fuel â†’ 50 liquid, 1 s, fuel refinery, <code>allow_productivity</code>. Beaconed with 3Ã— prod-9: <strong>760 liquid/s</strong> per refinery off 9.5 items/s. With your current 3Ã— prod-3 and a speed-3 beacon: 272.8 liquid/s.</dd>
+      <dd>1 rocket fuel → 50 liquid, 1 s, fuel refinery, <code>allow_productivity</code>. Beaconed with 3× prod-9: <strong>760 liquid/s</strong> per refinery off 9.5 items/s. With your current 3× prod-3 and a speed-3 beacon: 272.8 liquid/s.</dd>
 
-      <dt>reusability = 0.2 + 0.04 Ã— level</dt>
-      <dd>Recovered sections land at the <em>destination</em>. So the sections arriving here come off the fuel rockets sent to you â€” about 100 Ã— reusability each, one capsule each.</dd>
+      <dt>reusability = 0.2 + 0.04 × level</dt>
+      <dd>Recovered sections land at the <em>destination</em>. So the sections arriving here come off the fuel rockets sent to you — about 100 × reusability each, one capsule each.</dd>
 
       <dt>landing pad = 610 slots</dt>
       <dd>500 cargo + 110 for recovered sections and the capsule. A pure fuel rocket lands 5,000 rocket fuel = <strong>400,000 liquid</strong> at prod-9, which is four launches' worth. Hence the fixed 1:4 ratio.</dd>
@@ -422,13 +490,18 @@ a{color:var(--steel)}
     </dl>
   </div>
 
-  <div class="note"><strong>The cycle, in one line.</strong> <code class="mono">cycle = max(18.33, section_delivery) + max(15, 500 Ã— S / fill_rate)</code>. Your bot feed lands at about 25 s, so the first term is already within 7 s of the floor and there is very little left to win there.</div>
+  <div class="note"><strong>The cycle, in one line.</strong> <code class="mono">cycle = max(18.33, section_delivery) + max(15, 500 × S / fill_rate)</code>. Your bot feed lands at about 25 s, so the first term is already within 7 s of the floor and there is very little left to win there.</div>
 </section>
 </template>
 
 
 <footer>
-  Constants verified against Space Exploration 0.7.57 source: <code>scripts/launchpad.lua</code>, <code>prototypes/phase-1/entity/rocket-launch-pad.lua</code>, <code>prototypes/phase-3/recipe.lua</code>, <code>prototypes/phase-1/item/resources.lua</code>, and <code>se-cargo-rocket-construction-helper</code> 2.0.1. Belt trunk is the white deep-space belt at 90 items/s loose, 360 stacked. Refinery rates assume a <code>se-wide-beacon-2</code> at +10.0 speed and 3Ã— prod-9 at +0.60 productivity.
+  Constants verified against Space Exploration 0.7.57 source: <code>scripts/launchpad.lua</code>, <code>prototypes/phase-1/entity/rocket-launch-pad.lua</code>, <code>prototypes/phase-3/recipe.lua</code>, <code>prototypes/phase-1/item/resources.lua</code>, and <code>se-cargo-rocket-construction-helper</code> 2.0.1. Belt throughput is the selected speed times its stacking layers — the white deep-space belt at 90 items/s loose is 360 stacked — and one inserter reaches a single lane, so half of whatever the belt carries. Refinery rates assume a <code>se-wide-beacon-2</code> at +10.0 speed and 3× prod-9 at +0.60 productivity.
+  <p style="margin-top:10px">
+    Source:
+    <a href="https://github.com/Sadgitarius/se-rocket-logistics-calculators"
+       target="_blank" rel="noopener">github.com/Sadgitarius/se-rocket-logistics-calculators</a>
+  </p>
 </footer>
 
 </div>
@@ -439,7 +512,6 @@ a{color:var(--steel)}
   var LOCK = 1100/60;     // ascent lockout, time_takeoff_finish_ascent = 1100 ticks
   var ANIM = 15;          // silo doors + blinks before a completed rocket can leave
   var SLOTS = 500;        // rocket_capacity
-  var BELT = 360;         // white deep-space belt, fully stacked
   var PACK = 5;           // 1 packed section unpacks to 5
 
   // Inserter throughput, measured - see INSERTER_SPEED_REFERENCE.md:
@@ -448,14 +520,26 @@ a{color:var(--steel)}
   // configurations from 2 to 30 ticks in one run; the delta never left 3.11-3.44 and did not
   // care about approach angle, drop lane, or whether the arm was rotation- or extension-bound.
   // A belt on BOTH sides costs it twice. Container pickup and container drop are free.
+  // Measured on a stacked belt; an inserter onto a loose belt is lane-capped long before the
+  // penalty matters, so the two never bind at once.
   var BELT_TICKS = 3.28;
-  // One arm loads or unloads ONE lane, and a lane of a fully stacked deep-space belt moves
-  // 3 items/tick. So a single arm tops out near 180/s no matter how fast its geometry is -
-  // a 2-tick arm measured 176.4/s. Saturating a 360/s belt takes two arms, one per side.
-  var LANE_CAP = 180;
+
+  // Belt throughput is a setting, not a constant: speed x stacking layers. An arm loads or
+  // unloads ONE lane, so whatever the belt carries, a single arm can only reach half of it -
+  // on a fully stacked deep-space belt that lane moves 3 items/tick, and a 2-tick arm measured
+  // 176.4/s against a geometry ceiling of 480. Saturating any belt takes two arms, one per side.
+  function laneCap(belt){ return belt / 2; }
+
+  // "90 /s × 4 layers = 360 /s" - spells the multiplication out rather than only its answer,
+  // because the two dropdowns above say "90 /s" and "Yes" and neither shows what that comes to.
+  function beltHint(speedId, multId){
+    var sp = +$(speedId).value, mult = +$(multId).value;
+    return sp + " /s × " + mult + " layer" + (mult === 1 ? "" : "s") + " = " + (sp * mult) + " /s";
+  }
 
   var $ = function(id){ return document.getElementById(id); };
-  var ids = ["thru","stack","secarms","pads","geom","hand","trip","env","tier","reuse","rt","wagon"];
+  var ids = ["thru","stack","secarms","pads","geom","hand","trip","env","tier","reuse","rt","wagon",
+             "belt","beltmult"];
 
   // SE module effects per tier, index 0 = no module. prototypes/phase-2/modules.lua
   var SPD = [0,0.20,0.30,0.40,0.50,0.60,0.70,0.80,0.90,1.00];
@@ -474,7 +558,7 @@ a{color:var(--steel)}
   }
 
   function fmt(n,d){
-    if(!isFinite(n)) return "â€”";
+    if(!isFinite(n)) return "—";
     d = d===undefined ? (Math.abs(n)>=100?0:(Math.abs(n)>=10?1:2)) : d;
     return n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
   }
@@ -500,7 +584,8 @@ a{color:var(--steel)}
       reuse:   num("reuse", 0),
       buf:     $("buf").checked,
       rt:      num("rt", 1),
-      wagon:   num("wagon", 1)
+      wagon:   num("wagon", 1),
+      belt:    +$("belt").value * +$("beltmult").value
     };
   }
 
@@ -509,7 +594,8 @@ a{color:var(--steel)}
     var overhead = Math.max(LOCK, v.secarms);
 
     var ceiling  = v.hand * 60 / v.geom;
-    var perBelt  = Math.min(v.hand * 60 / (v.geom + BELT_TICKS), LANE_CAP);
+    var lane     = laneCap(v.belt);
+    var perBelt  = Math.min(v.hand * 60 / (v.geom + BELT_TICKS), lane);
     var perStore = ceiling;
 
     // Fewest silos that can work at all: the fill window cannot beat the silo animation.
@@ -567,7 +653,7 @@ a{color:var(--steel)}
 
     // Belts carry the peak draw, not the average: every silo can be filling at once.
     var peak  = feasible ? pads * needRate : NaN;
-    var belts = Math.ceil(peak / BELT);
+    var belts = Math.ceil(peak / v.belt);
 
     var ref = refinery(v.tier, v.env);
     var fuel = L * v.trip;
@@ -589,7 +675,8 @@ a{color:var(--steel)}
     var bufStacks = Math.ceil(1.2 * overhead * v.thru / v.stack);
 
     return {C:C, overhead:overhead, cycle:cycle, fill:fill, needRate:needRate, feasible:feasible,
-            L:L, pads:pads, minPads:minPads, ceiling:ceiling, perBelt:perBelt, perStore:perStore,
+            L:L, pads:pads, minPads:minPads, ceiling:ceiling, lane:lane,
+            perBelt:perBelt, perStore:perStore,
             armsBelt:armsBelt, armsStore:armsStore, peak:peak, belts:belts,
             padCap:padCap, eff:eff, openLo:openLo, openHi:openHi, fracHi:fracHi,
             fuel:fuel, refineries:refineries, rfItems:rfItems, arrivals:arrivals, ratio:ratio,
@@ -600,15 +687,16 @@ a{color:var(--steel)}
   function render(){
     var v = read(), m = model(v);
 
-    $("geomhint").textContent = fmt(m.perStore,1)+" /s from storage Â· "+fmt(m.perBelt,1)+
-      " /s off a belt (+"+BELT_TICKS+" t"+(m.perBelt >= LANE_CAP ? ", lane-capped" : "")+")";
+    $("geomhint").textContent = fmt(m.perStore,1)+" /s from storage · "+fmt(m.perBelt,1)+
+      " /s off a belt (+"+BELT_TICKS+" t"+(m.perBelt >= m.lane ? ", lane-capped" : "")+")";
+    $("belthint").textContent = beltHint("belt","beltmult");
     $("padshint").textContent = !isFinite(m.minPads) ? "blank for the minimum"
       : !isFinite(v.pads) ? "auto: "+m.minPads
-      : (!v.buf && v.pads < m.minPads) ? "under "+m.minPads+" â€” output shown is what you get"
+      : (!v.buf && v.pads < m.minPads) ? "under "+m.minPads+" — output shown is what you get"
       : "minimum is "+m.minPads;
     $("tierhint").textContent = v.tier===0
       ? "no beacon, 50 liquid/s each"
-      : (v.env ? "3Ã— speed-"+v.tier : "3Ã— prod-"+v.tier) + " + speed-"+v.tier+
+      : (v.env ? "3× speed-"+v.tier : "3× prod-"+v.tier) + " + speed-"+v.tier+
         " beacon, "+fmt(m.ref.rate,0)+" liquid/s each";
 
     // Buffered and under minPads is a genuinely impossible build, not merely a small one: dash
@@ -616,19 +704,19 @@ a{color:var(--steel)}
     // and turn the silo count red, since that is the input at fault.
     var broke = v.buf && !m.feasible && isFinite(m.pads) && isFinite(m.L);
     var sized = isFinite(m.pads) && isFinite(m.L) && !broke;
-    var f = function(n,d){ return sized ? fmt(n,d) : "â€”"; };
+    var f = function(n,d){ return sized ? fmt(n,d) : "—"; };
 
     // Two cells are computed but not rendered. Both are sized for a DIRECT feed - belts running
     // into the silo with nothing to absorb the dead time - and this build always buffers:
     //   cell --belts--> buffer --arms--> silo
     //        1584/s avg          2623/s peak
     // m.armsBelt is then not the silo head at all (that is m.armsStore), and m.belts is sized on
-    // the peak when a buffered trunk only carries the average, Math.ceil(v.thru / BELT).
+    // the peak when a buffered trunk only carries the average, Math.ceil(v.thru / v.belt).
     // Kept live so they can be put back behind a Direct/Buffered switch without redoing the model.
     var cells = [
       // what you place
-      ["hero g1"+(broke ? " bad" : ""), "Silos", isFinite(m.pads) ? fmt(m.pads,0) : "â€”", ""],
-      ["g1","Stack inserters Â· storage", f(m.armsStore,0), "per silo"]
+      ["hero g1"+(broke ? " bad" : ""), "Silos", isFinite(m.pads) ? fmt(m.pads,0) : "—", ""],
+      ["g1","Stack inserters · storage", f(m.armsStore,0), "per silo"]
     ];
     // With the buffer on, the stacks are a thing you build. With it off they do not exist, and
     // what matters instead is what the cell actually gets away with.
@@ -645,13 +733,13 @@ a{color:var(--steel)}
       ["g3","Fluid tanks", f(m.tanks,0), ""],
       ["g3","Liquid fuel", f(m.fuel,0), "/s"],
       ["g3","Pads", f(m.landing,0), ""],
-      ["g3","Rockets out : in", sized ? fmt(m.ratio,1)+" : 1" : "â€”", ""],
+      ["g3","Rockets out : in", sized ? fmt(m.ratio,1)+" : 1" : "—", ""],
       // what the train brings
       ["g4","Packed parts", f(m.wagPart,2), "wagons"],
       ["g4","Capsules", f(m.wagCap,3), "wagons"]
     ]);
     $("readout").innerHTML = cells.map(function(c){
-      var dash = c[2] === "â€”";
+      var dash = c[2] === "—";
       return '<div class="cell '+c[0]+'"><div class="k">'+c[1]+'</div><div class="v'+(dash?' none':'')+'">'+
              c[2] + (c[3] && !dash ? '<u>'+c[3]+'</u>' : '')+'</div></div>';
     }).join("");
@@ -666,14 +754,14 @@ a{color:var(--steel)}
       ["fill","fill "+fmt(Math.max(0,m.fill-ANIM),0)+"s", Math.max(0, m.fill-ANIM)]
     ];
     $("bar").innerHTML = broke
-      ? '<div class="seg bad" style="flex:1 1 0">impossible â€” '+m.minPads+' silos minimum</div>'
+      ? '<div class="seg bad" style="flex:1 1 0">impossible — '+m.minPads+' silos minimum</div>'
       : !drawable ? "" : segs.filter(function(s){return s[2]>0.05;}).map(function(s){
           return '<div class="seg '+s[0]+'" style="flex:'+s[2]+' 1 0" title="'+s[1]+'">'+
                  (s[2]/m.cycle>0.13 ? s[1] : "")+'</div>';
         }).join("");
     $("cyclelen").textContent = broke ? "the fill window falls under the "+ANIM+" s animation"
       : drawable ? fmt(m.cycle,1)+" s, "+fmt(100*m.overhead/m.cycle,0)+"% of it dead time"
-      : "â€”";
+      : "—";
 
   }
 
@@ -695,7 +783,7 @@ a{color:var(--steel)}
   // piles the difference into storage, so the peak is the reserve plus that transient. Drain at
   // exactly R and the transient vanishes but the pad never clears; drain instantly and you must
   // warehouse an entire rocket. That trade is the whole design.
-  var R_IDS = ["r_thru","r_stack","r_pads","r_geom","r_hand","r_reuse"];
+  var R_IDS = ["r_thru","r_stack","r_pads","r_geom","r_hand","r_reuse","r_belt","r_beltmult"];
   var PAD_SLOTS = 610;                    // rocket_capacity + 110, rocket-landing-pad.lua:31
 
   // Both of these used to be inputs and neither should have been - they are engine constants,
@@ -721,12 +809,13 @@ a{color:var(--steel)}
     var clear    = Math.max(0.1, perPad - LAND);
     var gap      = LATE;
     var drain    = C / clear;                      // pad -> storage rate needed
-    var perArm   = v.hand * 60 / v.geom;                                  // container to container
-    var perBelt  = Math.min(v.hand * 60 / (v.geom + BELT_TICKS), LANE_CAP); // container to belt
+    var perArm   = v.hand * 60 / v.geom;                                 // container to container
+    var lane     = laneCap(v.belt);
+    var perBelt  = Math.min(v.hand * 60 / (v.geom + BELT_TICKS), lane);  // container to belt
 
     var armsIn   = Math.ceil(drain / perArm);      // per pad
     var armsOut  = Math.ceil(v.thru / perBelt);    // total, storage onto belts
-    var beltsOut = Math.ceil(v.thru / BELT);
+    var beltsOut = Math.ceil(v.thru / v.belt);
 
     var reserve  = v.thru * gap;                            // never consumed unless a rocket slips
     var transient= C * Math.max(0, drain - v.thru) / drain;  // what the fast drain piles up
@@ -747,7 +836,8 @@ a{color:var(--steel)}
     var packed   = 100 * v.reuse * landings / PACK;  // the same sections repacked 5 to a slot
     var feasible = clear > 1;
     return { C:C, interval:interval, perPad:perPad, pads:pads, minPads:minPads, drain:drain,
-             clear:clear, gap:gap, uptime:uptime, eff:eff, perArm:perArm, perBelt:perBelt, armsIn:armsIn,
+             clear:clear, gap:gap, uptime:uptime, eff:eff, lane:lane,
+             perArm:perArm, perBelt:perBelt, armsIn:armsIn,
              armsOut:armsOut, beltsOut:beltsOut,
              reserve:reserve, transient:transient, capacity:capacity, hw:hw, packed:packed,
              feasible:feasible };
@@ -757,6 +847,7 @@ a{color:var(--steel)}
     var num = function(id, min){ var n = parseFloat($(id).value); return isFinite(n) && n >= min ? n : NaN; };
     return { thru:num("r_thru",0.001), stack:num("r_stack",1), pads:num("r_pads",1),
              geom:num("r_geom",1), hand:num("r_hand",1), reuse:num("r_reuse",0),
+             belt:+$("r_belt").value * +$("r_beltmult").value,
              buf:$("r_buf").checked };
   }
 
@@ -765,14 +856,15 @@ a{color:var(--steel)}
     var ok = isFinite(v.thru) && isFinite(v.stack) && isFinite(v.geom) &&
              isFinite(v.hand) && isFinite(v.reuse);
     var m = ok ? rmodel(v) : {};
-    var f = function(n,d){ return ok && isFinite(n) ? fmt(n,d) : "â€”"; };
-    var st = function(n){ return ok && isFinite(n) ? fmt(Math.ceil(n / v.stack),0) : "â€”"; };
+    var f = function(n,d){ return ok && isFinite(n) ? fmt(n,d) : "—"; };
+    var st = function(n){ return ok && isFinite(n) ? fmt(Math.ceil(n / v.stack),0) : "—"; };
 
     $("r_geomhint").textContent = ok
-      ? fmt(m.perArm,1)+" /s pad â†’ storage Â· "+fmt(m.perBelt,1)+" /s storage â†’ belt"
+      ? fmt(m.perArm,1)+" /s pad → storage · "+fmt(m.perBelt,1)+" /s storage → belt"
       : "ticks per swing";
     $("r_padshint").textContent = ok ? (isFinite(v.pads) ? "minimum is "+m.minPads : "auto: "+m.minPads)
                                      : "blank for the minimum";
+    $("r_belthint").textContent = beltHint("r_belt","r_beltmult");
 
     // Four more computed-but-dark cells. m.reserve and m.gap are the insurance half of
     // m.capacity, m.clear and m.drain the mechanics that produce the other half - all four are
@@ -781,20 +873,20 @@ a{color:var(--steel)}
       ["hero g1","Pads", f(m.pads,0), ""],
       (v.buf ? ["g1","Buffer storage", st(m.capacity), "stacks"]
              : ["g1","Effective output", f(m.eff,0), "/s"]),
-      ["g1","Arms Â· pad â†’ storage", f(m.armsIn,0), "per pad"],
-      ["g1","Arms Â· storage â†’ belt", f(m.armsOut,0), ""],
+      ["g1","Arms · pad → storage", f(m.armsIn,0), "per pad"],
+      ["g1","Arms · storage → belt", f(m.armsOut,0), ""],
       ["g2","Landing interval", f(m.interval,1), "s"],
       ["g2","Belts out", f(m.beltsOut,0), ""],
       ["g2","Sections + capsule", f(m.hw,2), "slots/s"],
       ["g2","Packed parts", f(m.packed,2), "slots/s"]
     ];
     $("r_readout").innerHTML = cells.map(function(c){
-      var dash = c[2] === "â€”";
+      var dash = c[2] === "—";
       return '<div class="cell '+c[0]+'"><div class="k">'+c[1]+'</div><div class="v'+(dash?' none':'')+'">'+
              c[2] + (c[3] && !dash ? '<u>'+c[3]+'</u>' : '')+'</div></div>';
     }).join("");
 
-    $("r_cyclelen").textContent = ok ? fmt(m.interval,1)+" s" : "â€”";
+    $("r_cyclelen").textContent = ok ? fmt(m.interval,1)+" s" : "—";
     if(!ok){ $("r_bar").innerHTML = ""; return; }
 
     // the bar is the interval split into the draining phase and the coasting phase
@@ -805,16 +897,161 @@ a{color:var(--steel)}
       var pct = 100*s[1]/m.interval;
       return pct <= 0 ? "" : '<div class="seg '+s[0]+'" style="flex:0 0 '+pct.toFixed(3)+'%">'+
         (pct > 13 ? s[2] : "")+'</div>';
-    }).join("") : '<div class="seg bad" style="flex:1 1 0">impossible â€” landings closer than the '+
+    }).join("") : '<div class="seg bad" style="flex:1 1 0">impossible — landings closer than the '+
       fmt(LAND,1)+' s cargo drop</div>';
   }
 
   R_IDS.forEach(function(id){ $(id).addEventListener("input", rrender); });
   $("r_buf").addEventListener("change", rrender);
 
-  render();
-  rrender();
+  // ================= settings export / import =================
+  // A saved file has to survive this page being edited afterwards, so nothing in the apply path
+  // is allowed to be load-bearing:
+  //   - settings are keyed by STABLE SEMANTIC NAMES, not element ids. Renaming a control means
+  //     editing one line of MAP and every file already out there still loads.
+  //   - a key that is ABSENT leaves its control untouched, so a file written before a field
+  //     existed simply leaves that field at its default instead of blanking it.
+  //   - a key that is UNKNOWN here is skipped, so a file written after a field is removed still
+  //     loads the rest of itself.
+  //   - a select value that is no longer one of the options is skipped rather than forced, so
+  //     retiring a belt tier or a module tier cannot leave a control showing nothing.
+  // The result is that old and new files interoperate in both directions and the worst case is
+  // a setting quietly staying at its default, never a broken form.
+  var APP = "se-rocket-logistics-calculators", SCHEMA = 1;
+  var MAP = {
+    send: { throughput:"thru", stackSize:"stack", fuelPerTrip:"trip", silos:"pads",
+            armCycle:"geom", location:"env", handSize:"hand", moduleTier:"tier",
+            reusability:"reuse", sectionFeed:"secarms", trainRoundTrip:"rt", wagonSize:"wagon",
+            beltSpeed:"belt", beltStacking:"beltmult", buffer:"buf" },
+    recv: { consumption:"r_thru", stackSize:"r_stack", pads:"r_pads", armCycle:"r_geom",
+            handSize:"r_hand", reusability:"r_reuse",
+            beltSpeed:"r_belt", beltStacking:"r_beltmult", buffer:"r_buf" }
+  };
+
+  function say(msg, bad){
+    var el = $("io_status");
+    el.textContent = msg;
+    el.className = "status" + (bad ? " bad" : "");
+    clearTimeout(say.t);
+    say.t = setTimeout(function(){ el.textContent = ""; el.className = "status"; }, 5000);
+  }
+
+  function collect(){
+    var out = { app:APP, version:SCHEMA, saved:new Date().toISOString(), settings:{} };
+    Object.keys(MAP).forEach(function(g){
+      var o = out.settings[g] = {};
+      Object.keys(MAP[g]).forEach(function(k){
+        var el = $(MAP[g][k]);
+        if (el) o[k] = el.type === "checkbox" ? el.checked : el.value;
+      });
+    });
+    return out;
+  }
+
+  // returns false if the file is not a settings file at all, otherwise how many controls it set
+  function apply(data){
+    if (!data || typeof data !== "object") return false;
+    var s = data.settings;
+    if (!s || typeof s !== "object") return false;
+    var n = 0;
+    Object.keys(MAP).forEach(function(g){
+      var src = s[g];
+      if (!src || typeof src !== "object") return;
+      Object.keys(MAP[g]).forEach(function(k){
+        if (!Object.prototype.hasOwnProperty.call(src, k)) return;
+        var el = $(MAP[g][k]);
+        if (!el) return;
+        var val = src[k];
+        if (el.type === "checkbox") { el.checked = (val === true || val === "true"); n++; return; }
+        if (val === null || val === undefined) return;
+        val = String(val);
+        if (el.tagName === "SELECT" && !Array.prototype.some.call(el.options,
+              function(o){ return o.value === val; })) return;
+        el.value = val; n++;
+      });
+    });
+    render(); rrender();
+    return n;
+  }
+
+  $("btn_export").addEventListener("click", function(){
+    var blob = new Blob([JSON.stringify(collect(), null, 2)], {type:"application/json"});
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement("a");
+    a.href = url;
+    a.download = "se-rocket-logistics-" + new Date().toISOString().slice(0,10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    say("Exported");
+  });
+
+  $("btn_import").addEventListener("click", function(){ $("file_import").click(); });
+
+  // ---- browser-local autosave -------------------------------------------------------------
+  // Same envelope as the exported file and the same tolerant apply(), so a stored blob written
+  // by an older build loads under a newer one for free - no migration step, ever. Every access
+  // is wrapped: storage throws outright in some privacy modes rather than merely being empty,
+  // and a calculator that cannot remember must still work.
+  var STORE = "se-rocket-logistics-calculators";
+
+  // Captured before anything is restored, so Reset puts back what the page ships with rather
+  // than whatever happened to be on screen. A field added later is defaulted here automatically.
+  var DEFAULTS = collect();
+
+  function saveLocal(){
+    try { localStorage.setItem(STORE, JSON.stringify(collect())); } catch (err) {}
+  }
+  var saveTimer;
+  function queueSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveLocal, 250); }
+
+  function loadLocal(){
+    var raw;
+    try { raw = localStorage.getItem(STORE); } catch (err) { return 0; }
+    if (!raw) return 0;
+    try { return apply(JSON.parse(raw)) || 0; } catch (err) { return 0; }
+  }
+
+  Object.keys(MAP).forEach(function(g){
+    Object.keys(MAP[g]).forEach(function(k){
+      var el = $(MAP[g][k]);
+      if (!el) return;
+      el.addEventListener("input", queueSave);
+      el.addEventListener("change", queueSave);
+    });
+  });
+
+  $("btn_reset").addEventListener("click", function(){
+    if (!confirm("Put every setting on both calculators back to its default?")) return;
+    apply(DEFAULTS);
+    try { localStorage.removeItem(STORE); } catch (err) {}
+    say("Reset to defaults");
+  });
+
+  $("file_import").addEventListener("change", function(e){
+    var file = e.target.files && e.target.files[0];
+    e.target.value = "";                       // so picking the same file twice fires again
+    if (!file) return;
+    var fr = new FileReader();
+    fr.onerror = function(){ say("Could not read that file", true); };
+    fr.onload = function(){
+      var data;
+      try { data = JSON.parse(fr.result); }
+      catch (err) { say("Not valid JSON", true); return; }
+      var n = apply(data);
+      if (n === false)   say("Not a settings file", true);
+      else if (n === 0)  say("Nothing in that file matched", true);
+      else { saveLocal(); say("Imported " + n + " setting" + (n === 1 ? "" : "s")); }
+    };
+    fr.readAsText(file);
+  });
+
+  // apply() renders as a side effect, so only render here when there was nothing to restore.
+  if (loadLocal()) say("Restored your last settings");
+  else { render(); rrender(); }
 })();
 </script>
+
 </body>
 </html>
