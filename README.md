@@ -23,6 +23,36 @@ Two of them move a default when you change them:
 **Buffer stays per-calculator.** It describes how that one side is built, not the world it is
 built in, and the two sides are frequently different.
 
+## Composite cell
+
+The second view answers a different question: **does this site end up with a surplus or a
+shortage of rocket sections and capsules?** List everything that lands here and everything that
+launches from here, each with its rate and stack size, and it tells you which way the parts train
+has to run and how many wagons it needs.
+
+It is one accounting identity, read out of `scripts/launchpad.lua`:
+
+```
+launching a rocket costs  100 sections + 1 capsule          (:540, :577)
+a rocket landing brings   100 × reusability sections        (:1189-1191)
+                        + 1 capsule, always                 (:1174)
+
+sections /s = 100 × (reusability × landings − launches)
+capsules /s = landings − launches
+```
+
+Two consequences worth knowing before you build:
+
+- **Capsules do not care about reusability.** The capsule insert on landing is unconditional, so
+  capsule balance is purely how many rockets arrive versus leave. Launch more than you land and
+  you need capsules shipped in, at any research level.
+- **Sections break even at `reusability = launches ÷ landings`.** The view prints that number.
+  If you launch more rockets than you receive it goes above 1 and reads *out of reach* — no
+  amount of research will balance that site and the parts have to come in by train.
+
+Section recovery is `floor(min(used, used × reusability × (0.9 + 0.2 × random)))`, so individual
+rockets vary ±10%. The mean is `100 × reusability`, which is what the view uses.
+
 ## What it answers
 
 ### Sending side

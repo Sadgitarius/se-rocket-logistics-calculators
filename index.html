@@ -209,7 +209,48 @@ header.top + section{padding-top:22px}   /* the masthead already carries the air
 .cell .v.none{color:var(--ink-3);font-weight:600}
 .cell.bad{background:var(--clay-soft)}
 .cell.bad .v{color:var(--clay)}
+.cell.good{background:var(--sage-soft)}
+.cell.good .v{color:var(--sage)}
 .seg.bad{background:var(--clay)}
+.seg.gain{background:var(--sage)}
+.seg.loss{background:var(--clay)}
+
+/* ---- view tabs ---- */
+.tabs{display:flex;gap:26px;margin-top:40px;border-bottom:1px solid var(--line)}
+.tab{
+  font-family:"IBM Plex Mono",monospace;font-size:.78rem;font-weight:700;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-3);background:none;border:0;
+  border-bottom:2px solid transparent;padding:8px 1px;margin-bottom:-1px;cursor:pointer;
+}
+.tab[aria-selected="true"]{color:var(--flare);border-bottom-color:var(--flare)}
+.tab:hover{color:var(--ink)}
+.tab:focus-visible{outline:2px solid var(--flare);outline-offset:3px}
+.tabs + div > section:first-child{padding-top:34px}
+
+/* ---- composite row editor ---- */
+.rowsblock{padding:20px 24px;border-bottom:1px solid var(--line)}
+.rowshead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.btn.mini{padding:4px 11px;font-size:.62rem}
+.rowcols,.row{display:grid;grid-template-columns:minmax(0,1fr) 96px 84px 34px;gap:8px;align-items:center}
+.rowcols{
+  font-family:"IBM Plex Mono",monospace;font-size:.6rem;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;
+}
+.rows{display:flex;flex-direction:column;gap:8px}
+.row input{
+  font-family:"IBM Plex Mono",monospace;font-size:.88rem;font-weight:500;
+  background:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:3px;padding:6px 9px;width:100%;height:34px;
+  -webkit-appearance:none;-moz-appearance:none;appearance:none;
+}
+.row input:focus{outline:2px solid var(--flare);outline-offset:1px;border-color:var(--flare)}
+.row .kill{
+  height:34px;border:1px solid var(--line);border-radius:3px;background:var(--panel);
+  color:var(--ink-3);cursor:pointer;font-size:1rem;line-height:1;padding:0;
+}
+.row .kill:hover{color:var(--clay);border-color:var(--clay)}
+.row .kill:focus-visible{outline:2px solid var(--clay);outline-offset:2px}
+.rowsempty{color:var(--ink-3);font-size:.82rem}
 
 /* ---- timeline ---- */
 .timeline{padding:22px 24px;border-top:1px solid var(--line)}
@@ -248,6 +289,13 @@ a{color:var(--steel);overflow-wrap:anywhere}
   header.top + section{padding-top:18px}
   .inputs{padding:16px 14px;gap:14px 14px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
   .field input,.field select{height:42px}   /* a touch target, not a mouse target */
+  .rowsblock{padding:16px 14px}
+  .rowcols,.row{grid-template-columns:minmax(0,1fr) 74px 62px 32px;gap:6px}
+  .row input{height:38px;padding:6px 7px;font-size:.82rem}
+  .row .kill{height:38px}
+  .tabs{gap:18px;margin-top:28px}
+  .tab{font-size:.72rem;letter-spacing:.1em}
+  .tabs + div > section:first-child{padding-top:24px}
   .readout{grid-template-columns:repeat(auto-fit,minmax(124px,1fr))}
   .cell{padding:13px 12px}
   .cell .v{font-size:1.4rem}
@@ -358,6 +406,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
         <span class="hint" id="beaconhint">module effect on the refinery</span>
       </div>
       <div class="field">
+        <label for="rt">Train round trip</label>
+        <input id="rt" type="number" value="180" min="10" step="10">
+        <span class="hint">seconds, for the parts train</span>
+      </div>
+      <div class="field">
         <label for="wagon">Wagon size</label>
         <input id="wagon" type="number" value="50" min="1" step="1">
         <span class="hint">slots; parts and capsules both stack to 1</span>
@@ -373,6 +426,15 @@ a{color:var(--steel);overflow-wrap:anywhere}
     </div>
   </div>
 </section>
+
+<nav class="tabs" role="tablist" aria-label="Views">
+  <button type="button" class="tab" id="tab_calc" role="tab" aria-selected="true"
+          aria-controls="view_calc">Calculators</button>
+  <button type="button" class="tab" id="tab_comp" role="tab" aria-selected="false"
+          aria-controls="view_comp">Composite cell</button>
+</nav>
+
+<div id="view_calc" role="tabpanel" aria-labelledby="tab_calc">
 
 <section id="calc">
   <div class="sechead"><span class="eyebrow">Sending side</span><span class="rule"></span>
@@ -420,11 +482,6 @@ a{color:var(--steel);overflow-wrap:anywhere}
           <option value="4">4 inserters</option>
         </select>
         <span class="hint" id="secarmshint">time to land 100 sections + 1 capsule</span>
-      </div>
-      <div class="field">
-        <label for="rt">Train round trip</label>
-        <input id="rt" type="number" value="180" min="10" step="10">
-        <span class="hint">seconds, for the parts train</span>
       </div>
     </div>
 
@@ -486,6 +543,48 @@ a{color:var(--steel);overflow-wrap:anywhere}
     </div>
   </div>
 </section>
+
+</div><!-- /view_calc -->
+
+<div id="view_comp" role="tabpanel" aria-labelledby="tab_comp" hidden>
+
+<section id="composite">
+  <div class="sechead"><span class="eyebrow">Composite cell</span><span class="rule"></span></div>
+  <div class="panel calc">
+
+    <div class="rowsblock">
+      <div class="rowshead">
+        <span class="eyebrow">Imports · rockets landing here</span>
+        <button type="button" class="btn ok mini" id="add_imp">Add</button>
+      </div>
+      <div class="rowcols"><span>Item</span><span>Rate /s</span><span>Stack</span><span></span></div>
+      <div class="rows" id="rows_imp"></div>
+    </div>
+
+    <div class="rowsblock">
+      <div class="rowshead">
+        <span class="eyebrow">Exports · rockets launching from here</span>
+        <button type="button" class="btn accent mini" id="add_exp">Add</button>
+      </div>
+      <div class="rowcols"><span>Item</span><span>Rate /s</span><span>Stack</span><span></span></div>
+      <div class="rows" id="rows_exp"></div>
+    </div>
+
+    <div class="readout" id="c_readout"></div>
+
+    <div class="timeline">
+      <div class="eyebrow" style="margin-bottom:9px">Section balance — <span id="c_verdict" class="mono"></span></div>
+      <div class="bar" id="c_bar"></div>
+      <div class="legend">
+        <span><i style="background:var(--sage)"></i>Sections recovered from landings</span>
+        <span><i style="background:var(--clay)"></i>Sections burned by launches</span>
+      </div>
+      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">sections = 100 × (reusability × landings − launches) · capsules = landings − launches</p>
+    </div>
+  </div>
+</section>
+
+</div><!-- /view_comp -->
 
 <!-- Source-of-truth constants, kept in the document but not rendered. Everything the calculator
      computes is derived from the values below; open this template to check an assumption. -->
@@ -1025,6 +1124,164 @@ a{color:var(--steel);overflow-wrap:anywhere}
       fmt(LAND,1)+' s cargo drop</div>';
   }
 
+  // ================= composite cell =================
+  // One accounting identity, read straight out of launchpad.lua:
+  //   launching a rocket costs  ceil(100 * rocket_cost_p) sections + 1 capsule   (:540, :577)
+  //   a rocket LANDING here brings floor(min(used, used * reusability * (0.9 + 0.2*rand)))
+  //     sections (:1189-1191) and exactly ONE capsule (:1174), inserted into the landing pad.
+  // The capsule insert is unconditional, so capsule balance depends only on how many rockets
+  // arrive versus leave - reusability cannot touch it. Sections average 100 * reusability per
+  // landing; the +/-10% is symmetric so it vanishes in the mean, and the min() clamp only bites
+  // near reusability 1.0. Assume full cargo, where rocket_cost_p = 1 and a rocket costs 100.
+  var SEC_PER_ROCKET = 100;
+
+  function cmodel(imp, exp, reuse, rt, wagon){
+    var rockets = function(rows){
+      return rows.reduce(function(t,r){
+        return (r.rate > 0 && r.stack > 0) ? t + r.rate / (SLOTS * r.stack) : t;
+      }, 0);
+    };
+    var land = rockets(imp), launch = rockets(exp);
+    var secIn  = SEC_PER_ROCKET * reuse * land;
+    var secOut = SEC_PER_ROCKET * launch;
+    var secNet = secIn - secOut;              // + surplus, - shortage, items/s
+    var capNet = land - launch;               // one per rocket each way
+    // The reusability at which sections break even. Above 1 it cannot be reached at all.
+    var breakEven = land > 0 ? launch / land : Infinity;
+    return { land:land, launch:launch, secIn:secIn, secOut:secOut, secNet:secNet, capNet:capNet,
+             breakEven:breakEven,
+             wagPart: Math.abs(secNet) * rt / PACK / wagon,   // ship sections packed, 5 to a slot
+             wagCap:  Math.abs(capNet) * rt / wagon };        // capsules are stack 1
+  }
+
+  // ---- row editor ----
+  // Rows are dynamic, so they cannot live in MAP the way the fixed controls do. They get their
+  // own branch in collect()/apply() instead, with the same tolerance: a malformed row is skipped,
+  // a missing list leaves what is on screen alone.
+  var ROWS = { imp: [ {label:"", rate:null, stack:100}, {label:"", rate:null, stack:100} ],
+               exp: [ {label:"", rate:null, stack:100} ] };
+
+  function rowNode(kind, row){
+    var wrap = document.createElement("div");
+    wrap.className = "row";
+
+    var name = document.createElement("input");
+    name.type = "text";
+    name.placeholder = kind === "imp" ? "iron plate" : "beryllium ore";
+    name.value = row.label || "";
+
+    var rate = document.createElement("input");
+    rate.type = "number"; rate.min = "0"; rate.step = "10";
+    rate.placeholder = "—";
+    rate.value = row.rate === null ? "" : String(row.rate);
+
+    var stack = document.createElement("input");
+    stack.type = "number"; stack.min = "1"; stack.step = "1";
+    stack.placeholder = "100";
+    stack.value = row.stack === null ? "" : String(row.stack);
+
+    var kill = document.createElement("button");
+    kill.type = "button"; kill.className = "kill"; kill.textContent = "×";
+    kill.title = "Remove this line";
+    kill.setAttribute("aria-label", "Remove line");
+
+    var pull = function(){
+      row.label = name.value;
+      row.rate  = rate.value === "" ? null : +rate.value;
+      row.stack = stack.value === "" ? null : +stack.value;
+      crender(); queueSave();
+    };
+    [name, rate, stack].forEach(function(el){ el.addEventListener("input", pull); });
+    kill.addEventListener("click", function(){
+      ROWS[kind].splice(ROWS[kind].indexOf(row), 1);
+      drawRows(kind); crender(); queueSave();
+    });
+
+    [name, rate, stack, kill].forEach(function(el){ wrap.appendChild(el); });
+    return wrap;
+  }
+
+  function drawRows(kind){
+    var host = $(kind === "imp" ? "rows_imp" : "rows_exp");
+    host.innerHTML = "";
+    if (!ROWS[kind].length) {
+      var p = document.createElement("p");
+      p.className = "rowsempty";
+      p.textContent = kind === "imp" ? "Nothing lands here yet." : "Nothing launches from here yet.";
+      host.appendChild(p);
+      return;
+    }
+    ROWS[kind].forEach(function(row){ host.appendChild(rowNode(kind, row)); });
+  }
+
+  function addRow(kind){
+    ROWS[kind].push({ label:"", rate:null, stack:100 });
+    drawRows(kind); crender(); queueSave();
+  }
+
+  function crender(){
+    var reuse = num("reuse", 0), rt = num("rt", 1), wagon = num("wagon", 1);
+    var ok = isFinite(reuse) && isFinite(rt) && isFinite(wagon);
+    var m = cmodel(ROWS.imp, ROWS.exp, reuse, rt, wagon);
+    var live = ok && (m.land > 0 || m.launch > 0);
+    var f = function(n,d){ return live && isFinite(n) ? fmt(n,d) : "—"; };
+
+    var surplus = m.secNet >= 0;
+    var capSurplus = m.capNet >= 0;
+    var signed = function(n,d){ return live ? (n > 0 ? "+" : n < 0 ? "−" : "") + fmt(Math.abs(n),d) : "—"; };
+
+    var cells = [
+      ["hero g1" + (live ? (surplus ? " good" : " bad") : ""),
+       surplus ? "Section surplus" : "Section shortage", signed(m.secNet,1), "/s"],
+      ["g1" + (live ? (capSurplus ? " good" : " bad") : ""),
+       capSurplus ? "Capsule surplus" : "Capsule shortage", signed(m.capNet,3), "/s"],
+      ["g1", "Parts train", f(m.wagPart,2), live ? (surplus ? "wagons out" : "wagons in") : ""],
+      ["g1", "Capsule train", f(m.wagCap,3), live ? (capSurplus ? "wagons out" : "wagons in") : ""],
+      ["g2", "Landings", f(m.land*60,2), "/min"],
+      ["g2", "Launches", f(m.launch*60,2), "/min"],
+      ["g2", "Sections recovered", f(m.secIn,1), "/s"],
+      ["g2", "Sections burned", f(m.secOut,1), "/s"],
+      ["g3", "Break-even reusability",
+       !live || !isFinite(m.breakEven) ? "—" : m.breakEven > 1 ? "out of reach" : fmt(m.breakEven,2),
+       !live || !isFinite(m.breakEven) || m.breakEven > 1 ? "" : "vs " + fmt(reuse,2)]
+    ];
+    $("c_readout").innerHTML = cells.map(function(c){
+      var dash = c[2] === "—";
+      return '<div class="cell '+c[0]+'"><div class="k">'+c[1]+'</div><div class="v'+(dash?' none':'')+'">'+
+             c[2] + (c[3] && !dash ? '<u>'+c[3]+'</u>' : '')+'</div></div>';
+    }).join("");
+
+    // Recovered against burned, on one bar. Equal halves means the cell feeds itself.
+    var total = m.secIn + m.secOut;
+    $("c_bar").innerHTML = !live || total <= 0 ? "" :
+      [["gain", m.secIn, "recovered "+fmt(m.secIn,1)+"/s"],
+       ["loss", m.secOut, "burned "+fmt(m.secOut,1)+"/s"]]
+      .map(function(s){
+        var pct = 100*s[1]/total;
+        return pct <= 0 ? "" : '<div class="seg '+s[0]+'" style="flex:0 0 '+pct.toFixed(3)+'%">'+
+          (pct > 16 ? s[2] : "")+'</div>';
+      }).join("");
+    $("c_verdict").textContent = !live ? "—"
+      : Math.abs(m.secNet) < 1e-9 ? "balanced"
+      : surplus ? "surplus, ship " + fmt(m.secNet,1) + " sections/s out"
+                : "shortage, ship " + fmt(-m.secNet,1) + " sections/s in";
+  }
+
+  // ---- view tabs ----
+  function showView(which){
+    var comp = which === "comp";
+    $("view_calc").hidden = comp;
+    $("view_comp").hidden = !comp;
+    $("tab_calc").setAttribute("aria-selected", String(!comp));
+    $("tab_comp").setAttribute("aria-selected", String(comp));
+    if (location.hash !== (comp ? "#composite" : "#calculators"))
+      history.replaceState(null, "", comp ? "#composite" : "#calculators");
+  }
+  $("tab_calc").addEventListener("click", function(){ showView("calc"); });
+  $("tab_comp").addEventListener("click", function(){ showView("comp"); });
+  $("add_imp").addEventListener("click", function(){ addRow("imp"); });
+  $("add_exp").addEventListener("click", function(){ addRow("exp"); });
+
   // ---- wiring ------------------------------------------------------------------------------
   // Both renders are defined by now, so every listener is attached in one place. The two sync
   // rules go on first: they rewrite a sibling field, and the render that follows has to see the
@@ -1034,7 +1291,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
   $("adj").addEventListener("input", syncArm);
   $("beltmult").addEventListener("input", syncHand);
 
-  function renderAll(){ render(); rrender(); }
+  function renderAll(){ render(); rrender(); crender(); }
   G_IDS.forEach(function(id){ $(id).addEventListener("input", renderAll); });
   S_IDS.forEach(function(id){ $(id).addEventListener("input", render); });
   R_IDS.forEach(function(id){ $(id).addEventListener("input", rrender); });
@@ -1082,6 +1339,9 @@ a{color:var(--steel);overflow-wrap:anywhere}
         if (el) o[k] = el.type === "checkbox" ? el.checked : el.value;
       });
     });
+    // The composite rows are dynamic, so they are a list rather than a set of named controls.
+    var strip = function(r){ return { label:r.label || "", rate:r.rate, stack:r.stack }; };
+    out.settings.composite = { imports: ROWS.imp.map(strip), exports: ROWS.exp.map(strip) };
     return out;
   }
 
@@ -1110,7 +1370,31 @@ a{color:var(--steel);overflow-wrap:anywhere}
         el.value = val; n++;
       });
     });
-    render(); rrender();
+
+    // Composite rows. Same tolerance as everything else: a list that is missing or not a list
+    // leaves what is on screen alone, and a row that is not an object is dropped rather than
+    // crashing the import.
+    if (!only || only.indexOf("composite") !== -1) {
+      var comp = s.composite;
+      if (comp && typeof comp === "object") {
+        [["imp","imports"],["exp","exports"]].forEach(function(pair){
+          var list = comp[pair[1]];
+          if (!Array.isArray(list)) return;
+          var numOrNull = function(x){
+            if (x === null || x === undefined || x === "") return null;
+            var v = +x;
+            return isFinite(v) ? v : null;
+          };
+          ROWS[pair[0]] = list
+            .filter(function(r){ return r && typeof r === "object"; })
+            .map(function(r){ return { label: r.label == null ? "" : String(r.label),
+                                       rate: numOrNull(r.rate), stack: numOrNull(r.stack) }; });
+          drawRows(pair[0]); n++;
+        });
+      }
+    }
+
+    render(); rrender(); crender();
     return n;
   }
 
@@ -1170,7 +1454,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
   });
 
   $("btn_reset_calc").addEventListener("click", function(){
-    apply(DEFAULTS, ["send","recv"]);
+    apply(DEFAULTS, ["send","recv","composite"]);
     saveLocal();
   });
 
@@ -1194,6 +1478,8 @@ a{color:var(--steel);overflow-wrap:anywhere}
 
   // apply() renders as a side effect, so only render here when there was nothing to restore.
   if (!loadLocal()) { render(); rrender(); }
+  drawRows("imp"); drawRows("exp"); crender();
+  showView(location.hash === "#composite" ? "comp" : "calc");
 })();
 </script>
 
