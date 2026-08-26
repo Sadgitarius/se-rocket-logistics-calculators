@@ -1,4 +1,4 @@
-# SE Rocket Logistics Calculators
+# SE Rocket Logistics
 
 Two sizing calculators for **Space Exploration 0.7.57** cargo rockets, in one static page.
 No build step, no dependencies, no tracking — a single `index.html` you can open from disk.
@@ -6,6 +6,22 @@ No build step, no dependencies, no tracking — a single `index.html` you can op
 **Live:** _(add your Render URL here after the first deploy)_
 
 ---
+
+## Global settings
+
+Anything that describes your world rather than one shipment lives in a panel above both
+calculators: belt speed and stacking, adjustable inserters, arm cycle, hand size, module tier,
+beacon tier, reusability, wagon size, fuel tank size. Change one and both sides re-render.
+
+Two of them move a default when you change them:
+
+- **Adjustable inserters** — say no and Arm cycle locks at 24 ticks, the fixed swing you get with
+  a container on one side and a container on the other (a 180° turn, which no offset beats).
+- **Belt stacking** — turning it off drops the hand size from 16 to 12. It only swaps when the
+  field is still on the other mode's default; a hand size you typed yourself is left alone.
+
+**Buffer stays per-calculator.** It describes how that one side is built, not the world it is
+built in, and the two sides are frequently different.
 
 ## What it answers
 
@@ -31,6 +47,11 @@ A rocket lands, dumps 500 slots into a pad, and leaves. The page tells you:
 - **how much buffer storage** to keep outside the pad so a late rocket never starves the belts,
 - **how many arms pad → storage** (this side has to be faster than storage → belt) and **storage → belt**,
 - **landing interval**, belts out, and the section/capsule return rate your reusability level implies.
+
+A punctual line needs no reserve at all — over one interval, delivery and consumption cancel
+exactly. Every stack you keep is insurance against a rocket arriving late, so **Missed rockets**
+is what sets the floor. One missed rocket costs one launch-to-landing recovery, 23.33 s of
+consumption. Set it to 0 and the reserve disappears, leaving only what the fast pad drain piles up.
 
 ## The Buffer toggles
 
@@ -67,7 +88,9 @@ Three buttons at the top right:
   small JSON file. Keep one per base, or paste one into a thread when you want someone to check
   your numbers.
 - **Import** — loads a settings file back into both calculators.
-- **Reset** — puts every setting back to its default and forgets the saved ones.
+- **Reset calculators** — puts both calculators back to their defaults and leaves the global
+  settings exactly as they are. That's the one you want between two shipments.
+- **Reset all** — puts everything back, global settings included, and forgets the saved copy.
 
 Saved files — and the browser-local copy, which uses the same format — are built to survive later
 versions of this page:
@@ -84,11 +107,14 @@ The worst case on import is a setting quietly staying at its default. It will no
 ```json
 {
   "app": "se-rocket-logistics-calculators",
-  "version": 1,
-  "saved": "2026-08-25T00:00:00.000Z",
+  "version": 2,
+  "saved": "2026-08-26T00:00:00.000Z",
   "settings": {
-    "send": { "throughput": "1584", "stackSize": "200", "beltSpeed": "90", "beltStacking": "4", "buffer": true },
-    "recv": { "consumption": "523", "stackSize": "20", "beltSpeed": "90", "beltStacking": "4", "buffer": true }
+    "global": { "beltSpeed": "90", "beltStacking": "4", "adjustableInserters": "1",
+                "armCycle": "24", "handSize": "16", "moduleTier": "9", "beaconTier": "10",
+                "reusability": "0.2", "wagonSize": "50", "fuelTankSize": "100000" },
+    "send":   { "throughput": "1584", "stackSize": "200", "buffer": true },
+    "recv":   { "consumption": "523", "stackSize": "20", "missedRockets": "1", "buffer": true }
   }
 }
 ```
@@ -105,6 +131,12 @@ Everything is read out of the mod, nothing is estimated:
 | silo animation | **15 s**, a floor the cycle can never go under | — |
 | landing pad inventory | **610** slots = `rocket_capacity + 110` | `prototypes/phase-1/entity/rocket-landing-pad.lua:31` |
 | `rocket_capacity` | **500** slots, so a rocket is `500 × stack size` items | — |
+| `se-wide-beacon` | 15 module slots × 0.5 effectivity = **×7.5** | `prototypes/phase-1/entity/wide-beacon.lua:78,82` |
+| `se-wide-beacon-2` | 20 module slots × 0.5 effectivity = **×10** | `prototypes/phase-1/entity/wide-beacon.lua:102` |
+
+The compact beacons reach the same two multipliers — 10 slots at 0.75 and at 1.0 — so the beacon
+dropdown is a tier, not an entity. Speed is floored at −80%, which only matters with no beacon and
+productivity modules in the refinery.
 
 Inserter throughput uses a measured model rather than the wiki numbers:
 

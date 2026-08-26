@@ -10,13 +10,13 @@
 
 <!-- Discord / link unfurl -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="SE Rocket Logistics Calculators">
-<meta property="og:title" content="Rocket Logistics Calculators">
+<meta property="og:site_name" content="SE Rocket Logistics">
+<meta property="og:title" content="Rocket Logistics">
 <meta property="og:description" content="Sizing calculators for Space Exploration cargo rockets: silos, landing pads, inserters and buffer stacks for a given throughput.">
 <meta property="og:url" content="https://se-rocket-logistics.onrender.com/">
 
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%9A%80%3C/text%3E%3C/svg%3E">
-<title>Rocket Logistics Calculators</title>
+<title>Rocket Logistics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
@@ -107,8 +107,9 @@ code,.mono,td.n,th.n{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;fo
 }
 
 /* ---- masthead ---- */
-header.top{padding:56px 0 8px}
+header.top{padding:26px 0 8px}
 .mast{display:flex;align-items:flex-end;justify-content:space-between;gap:14px 28px;flex-wrap:wrap}
+.title{min-width:0}
 .actions{display:flex;align-items:center;gap:9px;padding-bottom:7px}
 .btn{
   font-family:"IBM Plex Mono",monospace;font-size:.66rem;font-weight:600;letter-spacing:.12em;
@@ -128,7 +129,7 @@ header.top{padding:56px 0 8px}
   white-space:nowrap;text-align:right;
 }
 .actions .status.bad{color:var(--clay)}
-.kicker{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-bottom:20px}
+.kicker{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-top:9px}
 .kicker .tag{
   font-family:"IBM Plex Mono",monospace;font-size:.66rem;font-weight:600;letter-spacing:.14em;
   text-transform:uppercase;color:var(--flare);border:1px solid var(--flare);
@@ -136,8 +137,11 @@ header.top{padding:56px 0 8px}
 }
 
 section{padding-top:56px}
+header.top + section{padding-top:22px}   /* the masthead already carries the air above it */
 .sechead{display:flex;align-items:baseline;gap:16px;margin-bottom:6px}
-.sechead .eyebrow{white-space:nowrap}
+.sechead .eyebrow{
+  white-space:nowrap;font-size:.95rem;letter-spacing:.13em;color:var(--ink);font-weight:700;
+}
 .rule{flex:1;height:1px;background:var(--line);align-self:center}
 .subhead{color:var(--ink-3);margin:8px 0 24px;max-width:66ch}
 
@@ -178,6 +182,7 @@ section{padding-top:56px}
   border-radius:3px;padding:7px 9px;width:100%;
 }
 .field input:focus,.field select:focus{outline:2px solid var(--flare);outline-offset:1px;border-color:var(--flare)}
+.field input:disabled,.field select:disabled{opacity:.5;cursor:not-allowed;background:var(--panel-2)}
 .field .hint{font-size:.7rem;color:var(--ink-3);line-height:1.35}
 
 .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(144px,1fr));gap:1px;background:var(--line-soft)}
@@ -199,7 +204,7 @@ section{padding-top:56px}
 .bar{display:flex;height:34px;border-radius:3px;overflow:hidden;border:1px solid var(--line);background:var(--panel-2)}
 .seg{display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono",monospace;font-size:.68rem;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap;min-width:0}
 .seg.lock{background:#7a5a86}
-.seg.anim{background:var(--steel)}
+.seg.anim,.seg.coast{background:var(--steel)}
 .seg.fill{background:var(--flare)}
 .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:11px;font-size:.76rem;color:var(--ink-3)}
 .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:baseline}
@@ -230,23 +235,114 @@ a{color:var(--steel)}
 <div class="wrap">
 
 <header class="top">
-  <div class="kicker">
-    <span class="tag">Space Exploration 0.7.57</span>
-  </div>
   <div class="mast">
-    <h1>Rocket logistics calculators</h1>
+    <div class="title">
+      <h1>Rocket logistics</h1>
+      <div class="kicker">
+        <span class="tag">Space Exploration 0.7.57</span>
+      </div>
+    </div>
     <div class="actions">
       <span class="status" id="io_status" role="status" aria-live="polite"></span>
       <button type="button" class="btn ok" id="btn_import"
               title="Load a settings file back into both calculators">Import</button>
       <button type="button" class="btn accent" id="btn_export"
               title="Save every setting on both calculators to a JSON file">Export</button>
+      <button type="button" class="btn warn" id="btn_reset_calc"
+              title="Put both calculators back to their defaults, leaving the global settings alone">Reset calculators</button>
       <button type="button" class="btn warn" id="btn_reset"
-              title="Put every setting back to its default and forget the saved ones">Reset</button>
+              title="Put every setting, global ones included, back to its default">Reset all</button>
       <input type="file" id="file_import" accept="application/json,.json" hidden>
     </div>
   </div>
 </header>
+
+<section id="global">
+  <div class="sechead"><span class="eyebrow">Global settings</span><span class="rule"></span></div>
+  <div class="panel calc">
+    <div class="inputs">
+      <div class="field">
+        <label for="belt">Belt speed</label>
+        <select id="belt">
+          <option value="90" selected>90 /s</option>
+          <option value="45">45 /s</option>
+          <option value="30">30 /s</option>
+          <option value="15">15 /s</option>
+        </select>
+        <span class="hint">items / second before stacking</span>
+      </div>
+      <div class="field">
+        <label for="beltmult">Belt stacking</label>
+        <select id="beltmult">
+          <option value="4" selected>Yes</option>
+          <option value="1">No</option>
+        </select>
+        <span class="hint" id="belthint">— /s</span>
+      </div>
+      <div class="field">
+        <label for="hand">Hand size</label>
+        <input id="hand" type="number" value="16" min="1" step="1">
+        <span class="hint" id="handhint">items per stack-inserter swing</span>
+      </div>
+      <div class="field">
+        <label for="adj">Adjustable inserters</label>
+        <select id="adj">
+          <option value="1" selected>Yes</option>
+          <option value="0">No</option>
+        </select>
+        <span class="hint" id="adjhint">without them the swing is fixed</span>
+      </div>
+      <div class="field">
+        <label for="geom">Arm cycle</label>
+        <input id="geom" type="number" value="24" min="2" step="2">
+        <span class="hint" id="geomhint">ticks per swing</span>
+      </div>
+      <div class="field">
+        <label for="reuse">Reusability</label>
+        <input id="reuse" type="number" value="0.2" min="0.2" max="1" step="0.04">
+        <span class="hint">0.2 + 0.04 per researched level</span>
+      </div>
+      <div class="field">
+        <label for="tier">Module tier</label>
+        <select id="tier">
+          <option value="9" selected>Tier 9</option>
+          <option value="8">Tier 8</option>
+          <option value="7">Tier 7</option>
+          <option value="6">Tier 6</option>
+          <option value="5">Tier 5</option>
+          <option value="4">Tier 4</option>
+          <option value="3">Tier 3</option>
+          <option value="2">Tier 2</option>
+          <option value="1">Tier 1</option>
+          <option value="0">No modules</option>
+        </select>
+        <span class="hint" id="tierhint">refinery + beacon</span>
+      </div>
+      <div class="field">
+        <label for="beacon">Beacon tier</label>
+        <select id="beacon">
+          <option value="10" selected>Tier 2</option>
+          <option value="7.5">Tier 1</option>
+          <option value="0">None</option>
+        </select>
+        <span class="hint" id="beaconhint">module effect on the refinery</span>
+      </div>
+      <div class="field">
+        <label for="wagon">Wagon size</label>
+        <input id="wagon" type="number" value="50" min="1" step="1">
+        <span class="hint">slots; parts and capsules both stack to 1</span>
+      </div>
+      <div class="field">
+        <label for="tank">Fuel tank size</label>
+        <select id="tank">
+          <option value="100000" selected>100k</option>
+          <option value="25000">25k</option>
+        </select>
+        <span class="hint">fluid units one tank holds</span>
+      </div>
+    </div>
+  </div>
+</section>
 
 <section id="calc">
   <div class="sechead"><span class="eyebrow">Sending side</span><span class="rule"></span>
@@ -277,43 +373,12 @@ a{color:var(--steel)}
         <span class="hint" id="padshint">blank for the minimum</span>
       </div>
       <div class="field">
-        <label for="geom">Arm cycle</label>
-        <input id="geom" type="number" value="24" min="2" step="2">
-        <span class="hint" id="geomhint">ticks per swing</span>
-      </div>
-      <div class="field">
         <label for="env">Location</label>
         <select id="env">
           <option value="0" selected>Ground</option>
           <option value="1">Space</option>
         </select>
         <span class="hint">space refineries cannot take productivity</span>
-      </div>
-      <div class="field">
-        <label for="hand">Hand size</label>
-        <input id="hand" type="number" value="16" min="1" step="1">
-        <span class="hint">items per stack-inserter swing</span>
-      </div>
-      <div class="field">
-        <label for="tier">Module tier</label>
-        <select id="tier">
-          <option value="9" selected>Tier 9</option>
-          <option value="8">Tier 8</option>
-          <option value="7">Tier 7</option>
-          <option value="6">Tier 6</option>
-          <option value="5">Tier 5</option>
-          <option value="4">Tier 4</option>
-          <option value="3">Tier 3</option>
-          <option value="2">Tier 2</option>
-          <option value="1">Tier 1</option>
-          <option value="0">No modules</option>
-        </select>
-        <span class="hint" id="tierhint">refinery + beacon</span>
-      </div>
-      <div class="field">
-        <label for="reuse">Reusability</label>
-        <input id="reuse" type="number" value="0.2" min="0.2" max="1" step="0.04">
-        <span class="hint">0.2 + 0.04 per researched level</span>
       </div>
       <div class="field">
         <label for="secarms">Section feed</label>
@@ -330,29 +395,6 @@ a{color:var(--steel)}
         <input id="rt" type="number" value="180" min="10" step="10">
         <span class="hint">seconds, for the parts train</span>
       </div>
-      <div class="field">
-        <label for="wagon">Wagon size</label>
-        <input id="wagon" type="number" value="50" min="1" step="1">
-        <span class="hint">slots; parts and capsules both stack to 1</span>
-      </div>
-      <div class="field">
-        <label for="belt">Belt speed</label>
-        <select id="belt">
-          <option value="90" selected>90 /s</option>
-          <option value="45">45 /s</option>
-          <option value="30">30 /s</option>
-          <option value="15">15 /s</option>
-        </select>
-        <span class="hint">items / second before stacking</span>
-      </div>
-      <div class="field">
-        <label for="beltmult">Belt stacking</label>
-        <select id="beltmult">
-          <option value="4" selected>Yes</option>
-          <option value="1">No</option>
-        </select>
-        <span class="hint" id="belthint">— /s</span>
-      </div>
     </div>
 
     <div class="readout" id="readout"></div>
@@ -361,7 +403,7 @@ a{color:var(--steel)}
       <div class="eyebrow" style="margin-bottom:9px">One silo cycle — <span id="cyclelen" class="mono"></span></div>
       <div class="bar" id="bar"></div>
       <div class="legend">
-        <span><i style="background:#7a5a86"></i>Ascent lockout — silo frozen, sections queue in the container</span>
+        <span><i style="background:#7a5a86"></i>Ascent lockout — sections still queue</span>
         <span><i style="background:var(--steel)"></i>Silo animation</span>
         <span><i style="background:var(--flare)"></i>Filling 500 stacks</span>
       </div>
@@ -394,51 +436,22 @@ a{color:var(--steel)}
         <span class="hint" id="r_padshint">blank for the minimum</span>
       </div>
       <div class="field">
-        <label for="r_geom">Arm cycle</label>
-        <input id="r_geom" type="number" value="2" min="2" step="2">
-        <span class="hint" id="r_geomhint">ticks per swing</span>
-      </div>
-      <div class="field">
-        <label for="r_hand">Hand size</label>
-        <input id="r_hand" type="number" value="16" min="1" step="1">
-        <span class="hint">items per stack-inserter swing</span>
-      </div>
-      <div class="field">
-        <label for="r_reuse">Reusability</label>
-        <input id="r_reuse" type="number" value="0.2" min="0.2" max="1" step="0.04">
-        <span class="hint">0.2 + 0.04 per researched level</span>
-      </div>
-      <div class="field">
-        <label for="r_belt">Belt speed</label>
-        <select id="r_belt">
-          <option value="90" selected>90 /s</option>
-          <option value="45">45 /s</option>
-          <option value="30">30 /s</option>
-          <option value="15">15 /s</option>
-        </select>
-        <span class="hint">items / second before stacking</span>
-      </div>
-      <div class="field">
-        <label for="r_beltmult">Belt stacking</label>
-        <select id="r_beltmult">
-          <option value="4" selected>Yes</option>
-          <option value="1">No</option>
-        </select>
-        <span class="hint" id="r_belthint">— /s</span>
+        <label for="r_miss">Missed rockets</label>
+        <input id="r_miss" type="number" value="1" min="0" step="1">
+        <span class="hint" id="r_misshint">how many late arrivals the reserve covers</span>
       </div>
     </div>
 
     <div class="readout" id="r_readout"></div>
 
     <div class="timeline">
-      <div class="eyebrow" style="margin-bottom:9px">Buffer level over one landing interval — <span id="r_cyclelen" class="mono"></span></div>
+      <div class="eyebrow" style="margin-bottom:9px">One landing interval — <span id="r_cyclelen" class="mono"></span></div>
       <div class="bar" id="r_bar"></div>
       <div class="legend">
         <span><i style="background:var(--flare)"></i>Pad draining into storage</span>
         <span><i style="background:var(--steel)"></i>Storage feeding the belts alone</span>
-        <span><i style="background:#7a5a86"></i>Reserve, eaten only when a rocket is late</span>
       </div>
-      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">capacity = consumption × late-by + rocket × (drain − consumption) ÷ drain</p>
+      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">capacity = consumption × missed rockets × 23.33 s + rocket × (drain − consumption) ÷ drain</p>
     </div>
   </div>
 </section>
@@ -496,7 +509,7 @@ a{color:var(--steel)}
 
 
 <footer>
-  Constants verified against Space Exploration 0.7.57 source: <code>scripts/launchpad.lua</code>, <code>prototypes/phase-1/entity/rocket-launch-pad.lua</code>, <code>prototypes/phase-3/recipe.lua</code>, <code>prototypes/phase-1/item/resources.lua</code>, and <code>se-cargo-rocket-construction-helper</code> 2.0.1. Belt throughput is the selected speed times its stacking layers — the white deep-space belt at 90 items/s loose is 360 stacked — and one inserter reaches a single lane, so half of whatever the belt carries. Refinery rates assume a <code>se-wide-beacon-2</code> at +10.0 speed and 3× prod-9 at +0.60 productivity.
+  Constants verified against Space Exploration 0.7.57 source: <code>scripts/launchpad.lua</code>, <code>prototypes/phase-1/entity/rocket-launch-pad.lua</code>, <code>prototypes/phase-1/entity/wide-beacon.lua</code>, <code>prototypes/phase-3/recipe.lua</code>, <code>prototypes/phase-1/item/resources.lua</code>, and <code>se-cargo-rocket-construction-helper</code> 2.0.1. Belt throughput is whatever the two belt settings say — speed × stacking layers, so a 90 /s belt carries 90 loose or 360 stacked — and one inserter reaches a single lane, half of whatever the belt carries. Refinery rates follow the beacon and module tiers you pick: <code>se-wide-beacon</code> has 15 module slots and <code>se-wide-beacon-2</code> has 20, both at 0.5 distribution effectivity, so ×7.5 and ×10 (the compact beacons reach the same two multipliers with 10 slots at 0.75 and 1.0). In space the refinery becomes <code>se-fuel-refinery-spaced</code>, which drops productivity from its allowed effects, so its own three slots carry speed instead.
   <p style="margin-top:10px">
     Source:
     <a href="https://github.com/Sadgitarius/se-rocket-logistics-calculators"
@@ -538,8 +551,33 @@ a{color:var(--steel)}
   }
 
   var $ = function(id){ return document.getElementById(id); };
-  var ids = ["thru","stack","secarms","pads","geom","hand","trip","env","tier","reuse","rt","wagon",
-             "belt","beltmult"];
+  // Three groups now. G_IDS live in the Global settings panel and feed BOTH calculators, so they
+  // re-render both; S_IDS and R_IDS belong to one side each. The Buffer toggles stay local - they
+  // describe how that side is built, not the world it is built in.
+  var G_IDS = ["belt","beltmult","adj","geom","hand","tier","beacon","reuse","wagon","tank"];
+  var S_IDS = ["thru","stack","trip","pads","env","secarms","rt"];
+
+  // Arm cycle is only a choice if you run a mod that makes it one. Vanilla SE gives you the
+  // 24-tick swing of a container on one side and a container on the other, so the field is locked
+  // to 24 unless "Adjustable inserters" says otherwise.
+  var FIXED_ARM = 24;
+  function syncArm(){
+    var on = $("adj").value === "1";
+    $("geom").disabled = !on;
+    if (!on && +$("geom").value !== FIXED_ARM) $("geom").value = String(FIXED_ARM);
+    $("adjhint").textContent = on ? "arm cycle is yours to set"
+                                  : "arm cycle locked to " + FIXED_ARM + " ticks";
+  }
+
+  // Turning belt stacking off drops a stack inserter's hand from 16 to 12. Only swap when the
+  // field is still sitting on the OTHER mode's default - a hand size somebody typed themselves
+  // is theirs to keep.
+  var HAND = { on:16, off:12 };
+  function syncHand(){
+    var stacked = +$("beltmult").value > 1;
+    var want = stacked ? HAND.on : HAND.off, other = stacked ? HAND.off : HAND.on;
+    if (+$("hand").value === other) $("hand").value = String(want);
+  }
 
   // SE module effects per tier, index 0 = no module. prototypes/phase-2/modules.lua
   var SPD = [0,0.20,0.30,0.40,0.50,0.60,0.70,0.80,0.90,1.00];
@@ -547,12 +585,20 @@ a{color:var(--steel)}
   var PEN = [0,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50];
 
   // se-fuel-refinery: crafting_speed 1, 3 slots, 1 rocket fuel -> 50 liquid in 1 s.
-  // se-wide-beacon-2: 20 slots at distribution_effectivity 0.5, so 10x the module bonus.
+  // Beacon effect is module_slots x distribution_effectivity, read off the prototypes:
+  //   se-wide-beacon      15 slots x 0.5  = 7.5     (wide-beacon.lua:78,82)
+  //   se-wide-beacon-2    20 slots x 0.5  = 10      (wide-beacon.lua:102)
+  //   se-compact-beacon   10 slots x 0.75 = 7.5     (compact-beacon.lua:86,90)
+  //   se-compact-beacon-2 10 slots x 1.0  = 10      (compact-beacon.lua:106)
+  // The two shapes land on the same pair of multipliers, so the dropdown is tier, not entity.
   // In space the machine becomes se-fuel-refinery-spaced, which drops productivity from
   // allowed_effects, so its own three slots carry speed instead.
-  function refinery(tier, space){
-    var beacon = 10*SPD[tier];
-    var mult = space ? 1 + beacon + 3*SPD[tier] : 1 + beacon - 3*PEN[tier];
+  function refinery(tier, space, bm){
+    var beacon = bm*SPD[tier];
+    // Factorio floors the speed effect at -80%, so the multiplier never drops under 0.2. That
+    // only bites with no beacon and productivity modules in the machine - 1 - 3*0.5 = -0.5 - but
+    // without the clamp that combination returns a negative rate and a negative refinery count.
+    var mult = Math.max(0.2, space ? 1 + beacon + 3*SPD[tier] : 1 + beacon - 3*PEN[tier]);
     var prod = space ? 1 : 1 + 3*PRD[tier];
     return { rate: mult*50*prod, perItem: 50*prod };
   }
@@ -585,7 +631,9 @@ a{color:var(--steel)}
       buf:     $("buf").checked,
       rt:      num("rt", 1),
       wagon:   num("wagon", 1),
-      belt:    +$("belt").value * +$("beltmult").value
+      belt:    +$("belt").value * +$("beltmult").value,
+      beacon:  +$("beacon").value,
+      tank:    +$("tank").value
     };
   }
 
@@ -655,7 +703,7 @@ a{color:var(--steel)}
     var peak  = feasible ? pads * needRate : NaN;
     var belts = Math.ceil(peak / v.belt);
 
-    var ref = refinery(v.tier, v.env);
+    var ref = refinery(v.tier, v.env, v.beacon);
     var fuel = L * v.trip;
     var refineries = Math.ceil(fuel / ref.rate);
     var rfItems = fuel / ref.perItem;
@@ -667,7 +715,7 @@ a{color:var(--steel)}
     var wagPart = secNet*v.rt/PACK/v.wagon;
     var wagCap  = capNet*v.rt/v.wagon;
 
-    var tanks = Math.max(1, Math.ceil(pads*v.trip/25000));
+    var tanks = Math.max(1, Math.ceil(pads*v.trip/v.tank));
     var landing = Math.max(1, Math.ceil(arrivals*50));
 
     // Worst case: every silo dead at once, so nothing accepts for `overhead` seconds while
@@ -685,19 +733,25 @@ a{color:var(--steel)}
   }
 
   function render(){
+    syncArm();
     var v = read(), m = model(v);
 
     $("geomhint").textContent = fmt(m.perStore,1)+" /s from storage · "+fmt(m.perBelt,1)+
       " /s off a belt (+"+BELT_TICKS+" t"+(m.perBelt >= m.lane ? ", lane-capped" : "")+")";
     $("belthint").textContent = beltHint("belt","beltmult");
+    $("handhint").textContent = +$("beltmult").value > 1
+      ? "items per stack-inserter swing" : "items per swing, unstacked";
     $("padshint").textContent = !isFinite(m.minPads) ? "blank for the minimum"
       : !isFinite(v.pads) ? "auto: "+m.minPads
       : (!v.buf && v.pads < m.minPads) ? "under "+m.minPads+" — output shown is what you get"
       : "minimum is "+m.minPads;
-    $("tierhint").textContent = v.tier===0
-      ? "no beacon, 50 liquid/s each"
-      : (v.env ? "3× speed-"+v.tier : "3× prod-"+v.tier) + " + speed-"+v.tier+
-        " beacon, "+fmt(m.ref.rate,0)+" liquid/s each";
+    $("tierhint").textContent = (v.tier === 0
+        ? "no modules"
+        : (v.env ? "3× speed-" : "3× prod-") + v.tier +
+          (v.beacon ? " + speed-" + v.tier + " beacon" : ""))
+      + ", " + fmt(m.ref.rate,0) + " liquid/s each";
+    $("beaconhint").textContent = !v.beacon ? "refinery modules only"
+      : "×" + v.beacon + " module effect · +" + fmt(v.beacon*SPD[v.tier],1) + " speed";
 
     // Buffered and under minPads is a genuinely impossible build, not merely a small one: dash
     // every derived figure so it reads as "no answer" rather than a set of numbers to act on,
@@ -730,7 +784,7 @@ a{color:var(--steel)}
       ["g2","Items / rocket", f(m.C,0), ""],
       // refuelling
       ["g3","Fuel refineries", f(m.refineries,0), ""],
-      ["g3","Fluid tanks", f(m.tanks,0), ""],
+      ["g3","Fuel tanks", f(m.tanks,0), ""],
       ["g3","Liquid fuel", f(m.fuel,0), "/s"],
       ["g3","Pads", f(m.landing,0), ""],
       ["g3","Rockets out : in", sized ? fmt(m.ratio,1)+" : 1" : "—", ""],
@@ -765,9 +819,6 @@ a{color:var(--steel)}
 
   }
 
-  ids.forEach(function(id){ $(id).addEventListener("input", render); });
-  $("buf").addEventListener("change", render);
-
   // ================= receiving side =================
   // A landing pad is se-rocket-landing-pad, inventory_size = rocket_capacity + 110 = 610 slots
   // (rocket-landing-pad.lua:31). 500 of those are the cargo, the other 110 hold the recovered
@@ -783,7 +834,7 @@ a{color:var(--steel)}
   // piles the difference into storage, so the peak is the reserve plus that transient. Drain at
   // exactly R and the transient vanishes but the pad never clears; drain instantly and you must
   // warehouse an entire rocket. That trade is the whole design.
-  var R_IDS = ["r_thru","r_stack","r_pads","r_geom","r_hand","r_reuse","r_belt","r_beltmult"];
+  var R_IDS = ["r_thru","r_stack","r_pads","r_miss"];
   var PAD_SLOTS = 610;                    // rocket_capacity + 110, rocket-landing-pad.lua:31
 
   // Both of these used to be inputs and neither should have been - they are engine constants,
@@ -793,9 +844,11 @@ a{color:var(--steel)}
   // tick_journey_transition sets land_timer = 0 the moment ascent ends, so there is no travel
   // time between surfaces - a replacement rocket is ASCENT + LAND from launch to cargo down.
   var ASCENT = 1100/60, LAND = 300/60, RECOVER = ASCENT + LAND;
-  // A missed slot is covered by the next rocket launching immediately, so one recovery is the
-  // real exposure. Two consecutive misses is the case worth insuring against and no more.
-  var LATE = 2 * RECOVER;
+  // A missed slot is covered by the next rocket launching immediately, so ONE recovery - 23.33 s -
+  // is the exposure per rocket that fails to show. How many consecutive misses to insure against
+  // is a judgement call, not a constant, so it is the "Missed rockets" input: gap = misses x
+  // RECOVER. At 0 the reserve vanishes and only the drain transient is left, which is the correct
+  // answer for a line you trust completely.
 
   function rmodel(v){
     var C = SLOTS * v.stack;                       // items delivered per rocket
@@ -807,7 +860,7 @@ a{color:var(--steel)}
     // Use the whole window the pad is idle for. Draining slower is impossible - the next rocket
     // needs the slots - and draining faster only buys transient storage nobody wants.
     var clear    = Math.max(0.1, perPad - LAND);
-    var gap      = LATE;
+    var gap      = v.miss * RECOVER;
     var drain    = C / clear;                      // pad -> storage rate needed
     var perArm   = v.hand * 60 / v.geom;                                 // container to container
     var lane     = laneCap(v.belt);
@@ -833,38 +886,40 @@ a{color:var(--steel)}
     var eff    = v.buf ? v.thru : v.thru * uptime;
 
     var hw       = (100 * v.reuse + 1) * landings;   // sections + capsule, slots/s, loose
-    var packed   = 100 * v.reuse * landings / PACK;  // the same sections repacked 5 to a slot
+    var packed   = 100 * v.reuse * landings / PACK;  // the sections, repacked 5 to a slot
+    var caps     = landings;                         // one capsule per rocket, stack size 1
     var feasible = clear > 1;
     return { C:C, interval:interval, perPad:perPad, pads:pads, minPads:minPads, drain:drain,
              clear:clear, gap:gap, uptime:uptime, eff:eff, lane:lane,
              perArm:perArm, perBelt:perBelt, armsIn:armsIn,
              armsOut:armsOut, beltsOut:beltsOut,
-             reserve:reserve, transient:transient, capacity:capacity, hw:hw, packed:packed,
+             reserve:reserve, transient:transient, capacity:capacity,
+             hw:hw, packed:packed, caps:caps,
              feasible:feasible };
   }
 
   function rread(){
     var num = function(id, min){ var n = parseFloat($(id).value); return isFinite(n) && n >= min ? n : NaN; };
+    // Arm cycle, hand size, reusability and the belt come from the Global settings panel.
     return { thru:num("r_thru",0.001), stack:num("r_stack",1), pads:num("r_pads",1),
-             geom:num("r_geom",1), hand:num("r_hand",1), reuse:num("r_reuse",0),
-             belt:+$("r_belt").value * +$("r_beltmult").value,
+             geom:num("geom",1), hand:num("hand",1), reuse:num("reuse",0),
+             belt:+$("belt").value * +$("beltmult").value, miss:num("r_miss",0),
              buf:$("r_buf").checked };
   }
 
   function rrender(){
     var v = rread();
     var ok = isFinite(v.thru) && isFinite(v.stack) && isFinite(v.geom) &&
-             isFinite(v.hand) && isFinite(v.reuse);
+             isFinite(v.hand) && isFinite(v.reuse) && isFinite(v.miss);
     var m = ok ? rmodel(v) : {};
     var f = function(n,d){ return ok && isFinite(n) ? fmt(n,d) : "—"; };
     var st = function(n){ return ok && isFinite(n) ? fmt(Math.ceil(n / v.stack),0) : "—"; };
 
-    $("r_geomhint").textContent = ok
-      ? fmt(m.perArm,1)+" /s pad → storage · "+fmt(m.perBelt,1)+" /s storage → belt"
-      : "ticks per swing";
     $("r_padshint").textContent = ok ? (isFinite(v.pads) ? "minimum is "+m.minPads : "auto: "+m.minPads)
                                      : "blank for the minimum";
-    $("r_belthint").textContent = beltHint("r_belt","r_beltmult");
+    $("r_misshint").textContent = !isFinite(v.miss) ? "how many late arrivals the reserve covers"
+      : v.miss === 0 ? "no reserve — trusts the schedule exactly"
+      : "reserve covers " + fmt(v.miss*RECOVER,1) + " s · one rocket is " + fmt(RECOVER,1) + " s";
 
     // Four more computed-but-dark cells. m.reserve and m.gap are the insurance half of
     // m.capacity, m.clear and m.drain the mechanics that produce the other half - all four are
@@ -877,8 +932,10 @@ a{color:var(--steel)}
       ["g1","Arms · storage → belt", f(m.armsOut,0), ""],
       ["g2","Landing interval", f(m.interval,1), "s"],
       ["g2","Belts out", f(m.beltsOut,0), ""],
-      ["g2","Sections + capsule", f(m.hw,2), "slots/s"],
-      ["g2","Packed parts", f(m.packed,2), "slots/s"]
+      // Same order as the sending side's last two cells, and no longer overlapping: the sections
+      // are the "Packed parts" figure, so the other cell is the capsules alone - one per rocket.
+      ["g2","Packed parts", f(m.packed,2), "slots/s"],
+      ["g2","Capsules", f(m.caps,2), "/s"]
     ];
     $("r_readout").innerHTML = cells.map(function(c){
       var dash = c[2] === "—";
@@ -891,8 +948,8 @@ a{color:var(--steel)}
 
     // the bar is the interval split into the draining phase and the coasting phase
     var drainT = Math.min(m.clear, m.interval), coast = Math.max(0, m.interval - drainT);
-    var segs = [["fill", drainT, "draining "+fmt(drainT,1)+"s"],
-                ["anim", coast,  "coasting "+fmt(coast,1)+"s"]];
+    var segs = [["fill",  drainT, "draining "+fmt(drainT,1)+"s"],
+                ["coast", coast,  "coasting "+fmt(coast,1)+"s"]];
     $("r_bar").innerHTML = m.feasible ? segs.map(function(s){
       var pct = 100*s[1]/m.interval;
       return pct <= 0 ? "" : '<div class="seg '+s[0]+'" style="flex:0 0 '+pct.toFixed(3)+'%">'+
@@ -901,7 +958,20 @@ a{color:var(--steel)}
       fmt(LAND,1)+' s cargo drop</div>';
   }
 
+  // ---- wiring ------------------------------------------------------------------------------
+  // Both renders are defined by now, so every listener is attached in one place. The two sync
+  // rules go on first: they rewrite a sibling field, and the render that follows has to see the
+  // rewritten value, not the one that was there a moment ago.
+  // "input" and not "change": a select fires input FIRST, so a change-handler would land after
+  // the render it is supposed to feed.
+  $("adj").addEventListener("input", syncArm);
+  $("beltmult").addEventListener("input", syncHand);
+
+  function renderAll(){ render(); rrender(); }
+  G_IDS.forEach(function(id){ $(id).addEventListener("input", renderAll); });
+  S_IDS.forEach(function(id){ $(id).addEventListener("input", render); });
   R_IDS.forEach(function(id){ $(id).addEventListener("input", rrender); });
+  $("buf").addEventListener("change", render);
   $("r_buf").addEventListener("change", rrender);
 
   // ================= settings export / import =================
@@ -917,15 +987,15 @@ a{color:var(--steel)}
   //     retiring a belt tier or a module tier cannot leave a control showing nothing.
   // The result is that old and new files interoperate in both directions and the worst case is
   // a setting quietly staying at its default, never a broken form.
-  var APP = "se-rocket-logistics-calculators", SCHEMA = 1;
+  var APP = "se-rocket-logistics-calculators", SCHEMA = 2;
   var MAP = {
-    send: { throughput:"thru", stackSize:"stack", fuelPerTrip:"trip", silos:"pads",
-            armCycle:"geom", location:"env", handSize:"hand", moduleTier:"tier",
-            reusability:"reuse", sectionFeed:"secarms", trainRoundTrip:"rt", wagonSize:"wagon",
-            beltSpeed:"belt", beltStacking:"beltmult", buffer:"buf" },
-    recv: { consumption:"r_thru", stackSize:"r_stack", pads:"r_pads", armCycle:"r_geom",
-            handSize:"r_hand", reusability:"r_reuse",
-            beltSpeed:"r_belt", beltStacking:"r_beltmult", buffer:"r_buf" }
+    global: { beltSpeed:"belt", beltStacking:"beltmult", adjustableInserters:"adj",
+              armCycle:"geom", handSize:"hand", moduleTier:"tier", beaconTier:"beacon",
+              reusability:"reuse", wagonSize:"wagon", fuelTankSize:"tank" },
+    send:   { throughput:"thru", stackSize:"stack", fuelPerTrip:"trip", silos:"pads",
+              location:"env", sectionFeed:"secarms", trainRoundTrip:"rt", buffer:"buf" },
+    recv:   { consumption:"r_thru", stackSize:"r_stack", pads:"r_pads", missedRockets:"r_miss",
+              buffer:"r_buf" }
   };
 
   function say(msg, bad){
@@ -948,13 +1018,16 @@ a{color:var(--steel)}
     return out;
   }
 
-  // returns false if the file is not a settings file at all, otherwise how many controls it set
-  function apply(data){
+  // returns false if the file is not a settings file at all, otherwise how many controls it set.
+  // `only` limits which groups are touched - that is the whole difference between the two
+  // Reset buttons, so there is one apply path and not two.
+  function apply(data, only){
     if (!data || typeof data !== "object") return false;
     var s = data.settings;
     if (!s || typeof s !== "object") return false;
     var n = 0;
     Object.keys(MAP).forEach(function(g){
+      if (only && only.indexOf(g) === -1) return;
       var src = s[g];
       if (!src || typeof src !== "object") return;
       Object.keys(MAP[g]).forEach(function(k){
@@ -1022,9 +1095,16 @@ a{color:var(--steel)}
     });
   });
 
+  // Reset all forgets the stored copy outright. Reset calculators keeps the global settings, so
+  // there is still something worth remembering - save the new state rather than clearing it.
   $("btn_reset").addEventListener("click", function(){
     apply(DEFAULTS);
     try { localStorage.removeItem(STORE); } catch (err) {}
+  });
+
+  $("btn_reset_calc").addEventListener("click", function(){
+    apply(DEFAULTS, ["send","recv"]);
+    saveLocal();
   });
 
   $("file_import").addEventListener("change", function(e){
