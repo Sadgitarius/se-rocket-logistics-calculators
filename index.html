@@ -108,9 +108,11 @@ code,.mono,td.n,th.n{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;fo
 
 /* ---- masthead ---- */
 header.top{padding:26px 0 8px}
-.mast{display:flex;align-items:flex-end;justify-content:space-between;gap:14px 28px;flex-wrap:wrap}
+.mast{display:flex;align-items:flex-start;justify-content:space-between;gap:14px 28px;flex-wrap:wrap}
 .title{min-width:0}
-.actions{display:flex;align-items:center;gap:9px;padding-bottom:7px}
+/* wrap, or the four nowrap buttons set a min-content width wider than a phone and the whole
+   page scrolls sideways */
+.actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:9px;padding-top:3px}
 .btn{
   font-family:"IBM Plex Mono",monospace;font-size:.66rem;font-weight:600;letter-spacing:.12em;
   text-transform:uppercase;color:var(--ink-2);background:var(--panel);
@@ -225,8 +227,25 @@ dl.consts dd{margin:0;padding:8px 0;border-bottom:1px solid var(--line-soft);col
 dl.consts dt:last-of-type,dl.consts dd:last-of-type{border-bottom:0}
 
 footer{margin-top:64px;color:var(--ink-3);font-size:.82rem;max-width:72ch}
-a{color:var(--steel)}
+a{color:var(--steel);overflow-wrap:anywhere}
 @media(prefers-reduced-motion:no-preference){.seg{transition:flex-grow .28s ease}}
+
+/* ---- phones ---- */
+@media (max-width:560px){
+  .wrap{padding:0 10px 64px}
+  header.top{padding:18px 0 4px}
+  section{padding-top:38px}
+  header.top + section{padding-top:18px}
+  .inputs{padding:16px 14px;gap:14px 14px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  .readout{grid-template-columns:repeat(auto-fit,minmax(124px,1fr))}
+  .cell{padding:13px 12px}
+  .cell .v{font-size:1.4rem}
+  .cell.hero .v{font-size:1.8rem}
+  .timeline{padding:16px 14px}
+  .actions{justify-content:flex-start}
+  .btn{padding:6px 10px;letter-spacing:.08em}
+  footer{margin-top:44px}
+}
 </style>
 
 </head>
@@ -509,7 +528,8 @@ a{color:var(--steel)}
 
 
 <footer>
-  Constants verified against Space Exploration 0.7.57 source: <code>scripts/launchpad.lua</code>, <code>prototypes/phase-1/entity/rocket-launch-pad.lua</code>, <code>prototypes/phase-1/entity/wide-beacon.lua</code>, <code>prototypes/phase-3/recipe.lua</code>, <code>prototypes/phase-1/item/resources.lua</code>, and <code>se-cargo-rocket-construction-helper</code> 2.0.1. Belt throughput is whatever the two belt settings say — speed × stacking layers, so a 90 /s belt carries 90 loose or 360 stacked — and one inserter reaches a single lane, half of whatever the belt carries. Refinery rates follow the beacon and module tiers you pick: <code>se-wide-beacon</code> has 15 module slots and <code>se-wide-beacon-2</code> has 20, both at 0.5 distribution effectivity, so ×7.5 and ×10 (the compact beacons reach the same two multipliers with 10 slots at 0.75 and 1.0). In space the refinery becomes <code>se-fuel-refinery-spaced</code>, which drops productivity from its allowed effects, so its own three slots carry speed instead.
+  Constants verified against Space Exploration 0.7.57 source: <code>scripts/launchpad.lua</code>, <code>prototypes/phase-1/entity/rocket-launch-pad.lua</code>, <code>prototypes/phase-1/entity/wide-beacon.lua</code>, <code>prototypes/phase-3/recipe.lua</code>, <code>prototypes/phase-1/item/resources.lua</code>, and <code>se-cargo-rocket-construction-helper</code> 2.0.1.
+  <p style="margin-top:10px">An inserter works one lane, so whatever the belt carries, a single arm reaches half of it — two arms per belt, one on each side.</p>
   <p style="margin-top:10px">
     Source:
     <a href="https://github.com/Sadgitarius/se-rocket-logistics-calculators"
@@ -645,6 +665,10 @@ a{color:var(--steel)}
     var lane     = laneCap(v.belt);
     var perBelt  = Math.min(v.hand * 60 / (v.geom + BELT_TICKS), lane);
     var perStore = ceiling;
+    // What the silo head actually picks from. Buffered, an arm reaches into a container and gets
+    // the full geometry ceiling; unbuffered there IS no container, the trunk belt runs to the
+    // silo, and the arm pays the belt penalty and the lane cap.
+    var perFeed  = v.buf ? perStore : perBelt;
 
     // Fewest silos that can work at all: the fill window cannot beat the silo animation.
     var minPads = Math.max(1, Math.ceil(v.thru * (overhead + ANIM) / C));
@@ -679,8 +703,8 @@ a{color:var(--steel)}
       eff = Math.min(v.thru, capT);
       for (var it = 0; it < 200; it++) {
         var cyc2 = pads * C / eff, fill2 = cyc2 - overhead;
-        var need2 = C / fill2, arms2 = Math.ceil(need2 / perStore);
-        padCap = arms2 * perStore;
+        var need2 = C / fill2, arms2 = Math.ceil(need2 / perFeed);
+        padCap = arms2 * perFeed;
         var k = pads * (fill2 / cyc2);
         openLo = Math.floor(k); openHi = openLo + 1; fracHi = k - openLo;
         var next = Math.min(capT, fracHi * Math.min(v.thru, openHi * padCap) +
@@ -724,7 +748,7 @@ a{color:var(--steel)}
 
     return {C:C, overhead:overhead, cycle:cycle, fill:fill, needRate:needRate, feasible:feasible,
             L:L, pads:pads, minPads:minPads, ceiling:ceiling, lane:lane,
-            perBelt:perBelt, perStore:perStore,
+            perBelt:perBelt, perStore:perStore, perFeed:perFeed,
             armsBelt:armsBelt, armsStore:armsStore, peak:peak, belts:belts,
             padCap:padCap, eff:eff, openLo:openLo, openHi:openHi, fracHi:fracHi,
             fuel:fuel, refineries:refineries, rfItems:rfItems, arrivals:arrivals, ratio:ratio,
@@ -760,17 +784,17 @@ a{color:var(--steel)}
     var sized = isFinite(m.pads) && isFinite(m.L) && !broke;
     var f = function(n,d){ return sized ? fmt(n,d) : "—"; };
 
-    // Two cells are computed but not rendered. Both are sized for a DIRECT feed - belts running
-    // into the silo with nothing to absorb the dead time - and this build always buffers:
-    //   cell --belts--> buffer --arms--> silo
-    //        1584/s avg          2623/s peak
-    // m.armsBelt is then not the silo head at all (that is m.armsStore), and m.belts is sized on
-    // the peak when a buffered trunk only carries the average, Math.ceil(v.thru / v.belt).
-    // Kept live so they can be put back behind a Direct/Buffered switch without redoing the model.
+    // m.belts is computed but not rendered: it is sized on the peak draw, when a buffered trunk
+    // only has to carry the average, Math.ceil(v.thru / v.belt). Kept live all the same.
+    //
+    // The silo head is a different arm depending on the Buffer switch. Buffered, it reaches into
+    // a container:  cell --belts--> buffer --arms--> silo.  Unbuffered there is no container and
+    // the trunk runs to the silo, so the arm picks off a belt and is slower for it.
     var cells = [
       // what you place
       ["hero g1"+(broke ? " bad" : ""), "Silos", isFinite(m.pads) ? fmt(m.pads,0) : "—", ""],
-      ["g1","Stack inserters · storage", f(m.armsStore,0), "per silo"]
+      ["g1", v.buf ? "Arms · storage → silo" : "Arms · belt → silo",
+             f(v.buf ? m.armsStore : m.armsBelt, 0), "per silo"]
     ];
     // With the buffer on, the stacks are a thing you build. With it off they do not exist, and
     // what matters instead is what the cell actually gets away with.
@@ -924,19 +948,24 @@ a{color:var(--steel)}
     // Four more computed-but-dark cells. m.reserve and m.gap are the insurance half of
     // m.capacity, m.clear and m.drain the mechanics that produce the other half - all four are
     // explained in the note under the bar, so the readout carries only what gets built.
+    // Without a buffer there is no storage to drain into - the pad's own 500 slots are the
+    // buffer - so the pad → storage arm does not exist and the belt head reaches into the pad
+    // itself. Same arm, same rate, different container.
     var cells = [
       ["hero g1","Pads", f(m.pads,0), ""],
       (v.buf ? ["g1","Buffer storage", st(m.capacity), "stacks"]
-             : ["g1","Effective output", f(m.eff,0), "/s"]),
-      ["g1","Arms · pad → storage", f(m.armsIn,0), "per pad"],
-      ["g1","Arms · storage → belt", f(m.armsOut,0), ""],
+             : ["g1","Effective output", f(m.eff,0), "/s"])
+    ];
+    if (v.buf) cells.push(["g1","Arms · pad → storage", f(m.armsIn,0), "per pad"]);
+    cells = cells.concat([
+      ["g1", v.buf ? "Arms · storage → belt" : "Arms · pad → belt", f(m.armsOut,0), ""],
       ["g2","Landing interval", f(m.interval,1), "s"],
       ["g2","Belts out", f(m.beltsOut,0), ""],
       // Same order as the sending side's last two cells, and no longer overlapping: the sections
       // are the "Packed parts" figure, so the other cell is the capsules alone - one per rocket.
       ["g2","Packed parts", f(m.packed,2), "slots/s"],
       ["g2","Capsules", f(m.caps,2), "/s"]
-    ];
+    ]);
     $("r_readout").innerHTML = cells.map(function(c){
       var dash = c[2] === "—";
       return '<div class="cell '+c[0]+'"><div class="k">'+c[1]+'</div><div class="v'+(dash?' none':'')+'">'+

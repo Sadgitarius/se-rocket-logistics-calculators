@@ -30,7 +30,8 @@ built in, and the two sides are frequently different.
 You have a cell producing *N* items/second and you want it in orbit. The page tells you:
 
 - **how many silos** the throughput actually needs,
-- **how many stack inserters** to feed each silo, and how many to feed the buffer off belts,
+- **how many arms feed each silo** — `storage → silo` when you buffer, `belt → silo` when you
+  don't, and the second is the slower arm because it pays the belt penalty and the lane cap,
 - **how many stacked belts** the trunk needs,
 - **how many buffer stacks** sit between the cell and the silos,
 - and a timeline of one silo cycle, so you can see the fill window against the lockout.
@@ -45,7 +46,9 @@ A rocket lands, dumps 500 slots into a pad, and leaves. The page tells you:
 
 - **how many landing pads** the consumption needs,
 - **how much buffer storage** to keep outside the pad so a late rocket never starves the belts,
-- **how many arms pad → storage** (this side has to be faster than storage → belt) and **storage → belt**,
+- **how many arms `pad → storage`** (this side has to be faster than `storage → belt`) and
+  **`storage → belt`** — with no buffer there is no storage, so the first cell disappears and the
+  second becomes `pad → belt`,
 - **landing interval**, belts out, and the section/capsule return rate your reusability level implies.
 
 A punctual line needs no reserve at all — over one interval, delivery and consumption cancel
