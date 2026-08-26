@@ -547,6 +547,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
         </select>
         <span class="hint" id="secarmshint">time to land 100 parts + 1 capsule</span>
       </div>
+      <div class="field">
+        <label for="rt">Train round trip</label>
+        <input id="rt" type="number" value="180" min="10" step="10">
+        <span class="hint">seconds, for the parts train</span>
+      </div>
     </div>
 
     <div class="readout" id="readout"></div>
@@ -638,9 +643,9 @@ a{color:var(--steel);overflow-wrap:anywhere}
         <span class="hint">landings and launches stay per minute</span>
       </div>
       <div class="field">
-        <label for="rt">Train ride time</label>
-        <input id="rt" type="number" value="180" min="10" step="10">
-        <span class="hint">seconds for one full round trip</span>
+        <label for="c_rt">Train round trip</label>
+        <input id="c_rt" type="number" value="180" min="10" step="10">
+        <span class="hint">the same setting as the sending side</span>
       </div>
     </div>
 
@@ -804,7 +809,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
   // re-render both; S_IDS and R_IDS belong to one side each. The Buffer toggles stay local - they
   // describe how that side is built, not the world it is built in.
   var G_IDS = ["belt","beltmult","adj","geom","hand","tier","beacon","reuse","wagon","tank",
-               "rt","c_unit"];
+               "c_unit"];
   var S_IDS = ["thru","stack","trip","pads","env","secarms"];
 
   // Arm cycle is only a choice if you run a mod that makes it one. Vanilla SE gives you the
@@ -1502,6 +1507,9 @@ a{color:var(--steel);overflow-wrap:anywhere}
   }
 
   function crender(){
+    // Every repaint runs through here - a keystroke, an import, a reset - so this is the one place
+    // the mirror has to be refreshed.
+    $("c_rt").value = $("rt").value;
     var reuse = num("reuse", 0), rt = num("rt", 1), wagon = num("wagon", 1);
     var ok = isFinite(reuse) && isFinite(rt) && isFinite(wagon);
     var m = cmodel(ROWS.imp, ROWS.exp, reuse, rt, wagon);
@@ -1633,6 +1641,14 @@ a{color:var(--steel);overflow-wrap:anywhere}
   }
 
   function renderAll(){ render(); rrender(); crender(); }
+  // Train round trip lives on the sending side, where it sizes the parts wagons, but the composite
+  // cell sizes a train off the same number. One value, two boxes: `rt` is the one that is read and
+  // saved, `c_rt` is a mirror that crender() keeps in step.
+  $("rt").addEventListener("input", renderAll);
+  // Writing rt by hand does not fire its own input event, so the mirror has to ask for the save.
+  $("c_rt").addEventListener("input", function(){
+    $("rt").value = $("c_rt").value; renderAll(); queueSave();
+  });
   G_IDS.forEach(function(id){ $(id).addEventListener("input", renderAll); });
   S_IDS.forEach(function(id){ $(id).addEventListener("input", render); });
   R_IDS.forEach(function(id){ $(id).addEventListener("input", rrender); });

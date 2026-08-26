@@ -38,12 +38,13 @@ built in, and the two sides are frequently different.
 The second view answers a different question: **does this site end up with a surplus or a
 shortage of parts and capsules?** List everything that lands here and everything that
 launches from here, each with its rate and stack size, and it tells you which way the parts train
-has to run and how many wagons it needs, for the train ride time you set.
+has to run and how many wagons it needs, for the train round trip you set.
 
 Its own settings sit above the two lists: **Show rates** switches every rate between per second
 and per minute (landings and launches always read per minute, and wagon counts are per train ride
-rather than a rate, so neither follows the toggle), and **Train ride time** is what turns a
-surplus or shortage into a wagon count.
+rather than a rate, so neither follows the toggle), and **Train round trip** is what turns a
+surplus or shortage into a wagon count. That last one is the sending side's own field, shown here
+too because both views size a train off it — edit it in either place and both follow.
 
 Each line has an **item picker**: start typing and it filters 750 items by icon and name, and
 picking one fills the stack size for you. Matching ignores case, spaces and punctuation and hits
