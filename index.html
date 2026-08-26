@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#e9ecf0" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#101419" media="(prefers-color-scheme:dark)">
+<meta name="description" content="Sizing calculators for Space Exploration cargo rockets: how many silos, landing pads, inserters and buffer stacks a given throughput needs. Built on constants read out of the SE source, not estimated.">
+
+<!-- Discord / link unfurl. After the first deploy, set og:url to the live address. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SE Rocket Logistics Calculators">
+<meta property="og:title" content="Rocket Logistics Calculators">
+<meta property="og:description" content="Sizing calculators for Space Exploration cargo rockets: silos, landing pads, inserters and buffer stacks for a given throughput.">
+<!-- <meta property="og:url" content="https://se-rocket-logistics-calculators.onrender.com/"> -->
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%9A%80%3C/text%3E%3C/svg%3E">
+<title>Rocket Logistics Calculators</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+
+<style>
+:root{
+  --ground:#e9ecf0;
+  --panel:#ffffff;
+  --panel-2:#f2f4f7;
+  --line:#c9d0d9;
+  --line-soft:#dfe4ea;
+  --ink:#161b22;
+  --ink-2:#39424e;
+  --ink-3:#6b7683;
+  --flare:#c76a12;
+  --flare-soft:#f5e3cd;
+  --steel:#2f6d85;
+  --steel-soft:#dbe9ee;
+  --clay:#a8412c;
+  --clay-soft:#f4dcd6;
+  --sage:#4d7440;
+  --sage-soft:#dfe9d9;
+  --shadow:0 1px 2px rgba(22,27,34,.06),0 8px 24px -16px rgba(22,27,34,.28);
+  --g1:#ffffff; --g2:#f7f8fa; --g3:#f0f3f6; --g4:#e9edf2;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101419;
+    --panel:#171c23;
+    --panel-2:#1d232b;
+    --line:#2f3843;
+    --line-soft:#252d36;
+    --ink:#e7ecf2;
+    --ink-2:#b3bdc9;
+    --ink-3:#7d8996;
+    --flare:#e59a3d;
+    --flare-soft:#3a2a13;
+    --steel:#69b3ce;
+    --steel-soft:#152a33;
+    --clay:#e0806a;
+    --clay-soft:#361d17;
+    --sage:#9dc286;
+    --sage-soft:#1e2a18;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.8);
+    --g1:#171c23; --g2:#1b212a; --g3:#202730; --g4:#252d38;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101419;
+  --panel:#171c23;
+  --panel-2:#1d232b;
+  --line:#2f3843;
+  --line-soft:#252d36;
+  --ink:#e7ecf2;
+  --ink-2:#b3bdc9;
+  --ink-3:#7d8996;
+  --flare:#e59a3d;
+  --flare-soft:#3a2a13;
+  --steel:#69b3ce;
+  --steel-soft:#152a33;
+  --clay:#e0806a;
+  --clay-soft:#361d17;
+  --sage:#9dc286;
+  --sage-soft:#1e2a18;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.8);
+  --g1:#171c23; --g2:#1b212a; --g3:#202730; --g4:#252d38;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--ground);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15.5px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1360px;margin:0 auto;padding:0 12px 96px}
+
+h1,h2,h3{font-family:Archivo,"Arial Narrow",system-ui,sans-serif;text-wrap:balance;margin:0}
+h1{font-weight:800;font-size:clamp(2.1rem,5.4vw,3.3rem);line-height:1.02;letter-spacing:-.025em}
+h2{font-weight:700;font-size:1.45rem;letter-spacing:-.012em;line-height:1.15}
+h3{font-weight:600;font-size:1.02rem;letter-spacing:-.005em}
+p{margin:0}
+code,.mono,td.n,th.n{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:.685rem;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
+}
+
+/* ---- masthead ---- */
+header.top{padding:56px 0 8px}
+.kicker{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-bottom:20px}
+.kicker .tag{
+  font-family:"IBM Plex Mono",monospace;font-size:.66rem;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--flare);border:1px solid var(--flare);
+  padding:2px 8px;border-radius:2px;
+}
+
+section{padding-top:56px}
+.sechead{display:flex;align-items:baseline;gap:16px;margin-bottom:6px}
+.sechead .eyebrow{white-space:nowrap}
+.rule{flex:1;height:1px;background:var(--line);align-self:center}
+.subhead{color:var(--ink-3);margin:8px 0 24px;max-width:66ch}
+
+/* ---- inline header toggle ---- */
+.toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;white-space:nowrap}
+.toggle input{position:absolute;opacity:0;width:0;height:0}
+.toggle .track{
+  width:34px;height:18px;border-radius:9px;background:var(--line);
+  border:1px solid var(--line);position:relative;transition:background .15s;flex:0 0 auto;
+}
+.toggle .track::after{
+  content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;
+  background:var(--panel);transition:transform .15s;
+}
+.toggle input:checked + .track{background:var(--flare);border-color:var(--flare)}
+.toggle input:checked + .track::after{transform:translateX(16px)}
+.toggle input:focus-visible + .track{outline:2px solid var(--flare);outline-offset:2px}
+.toggle .lab{
+  font-family:"IBM Plex Mono",monospace;font-size:.66rem;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+.toggle input:checked ~ .lab{color:var(--flare)}
+
+/* ---- panels ---- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow)}
+
+/* ---- calculator ---- */
+.calc{margin-top:8px}
+.inputs{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(166px,1fr));gap:16px 18px;
+  padding:22px 24px;background:var(--panel-2);border-bottom:1px solid var(--line);
+}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-family:"IBM Plex Mono",monospace;font-size:.65rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.field input,.field select{
+  font-family:"IBM Plex Mono",monospace;font-size:.92rem;font-weight:500;
+  background:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:3px;padding:7px 9px;width:100%;
+}
+.field input:focus,.field select:focus{outline:2px solid var(--flare);outline-offset:1px;border-color:var(--flare)}
+.field .hint{font-size:.7rem;color:var(--ink-3);line-height:1.35}
+
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(144px,1fr));gap:1px;background:var(--line-soft)}
+.cell{background:var(--g1);padding:16px 16px}
+.cell.g2{background:var(--g2)}
+.cell.g3{background:var(--g3)}
+.cell.g4{background:var(--g4)}
+.cell .k{font-family:"IBM Plex Mono",monospace;font-size:.63rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.cell .v{font-family:Archivo,sans-serif;font-weight:700;font-size:1.6rem;letter-spacing:-.02em;line-height:1.2;margin-top:3px}
+.cell .v u{text-decoration:none;font-size:.78rem;font-weight:600;color:var(--ink-3);margin-left:3px}
+.cell.hero .v{color:var(--flare);font-size:2.15rem}
+.cell .v.none{color:var(--ink-3);font-weight:600}
+.cell.bad{background:var(--clay-soft)}
+.cell.bad .v{color:var(--clay)}
+.seg.bad{background:var(--clay)}
+
+/* ---- timeline ---- */
+.timeline{padding:22px 24px;border-top:1px solid var(--line)}
+.bar{display:flex;height:34px;border-radius:3px;overflow:hidden;border:1px solid var(--line);background:var(--panel-2)}
+.seg{display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono",monospace;font-size:.68rem;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap;min-width:0}
+.seg.lock{background:#7a5a86}
+.seg.anim{background:var(--steel)}
+.seg.fill{background:var(--flare)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:11px;font-size:.76rem;color:var(--ink-3)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+
+.note{
+  border-left:2px solid var(--flare);padding:2px 0 2px 16px;color:var(--ink-2);
+  font-size:.9rem;margin-top:20px;max-width:70ch;
+}
+.note strong{color:var(--ink)}
+
+
+dl.consts{display:grid;grid-template-columns:auto 1fr;gap:0;margin:0;font-size:.875rem}
+dl.consts dt{
+  font-family:"IBM Plex Mono",monospace;font-size:.8rem;font-weight:500;color:var(--flare);
+  padding:8px 18px 8px 0;border-bottom:1px solid var(--line-soft);white-space:nowrap;
+}
+dl.consts dd{margin:0;padding:8px 0;border-bottom:1px solid var(--line-soft);color:var(--ink-2)}
+dl.consts dt:last-of-type,dl.consts dd:last-of-type{border-bottom:0}
+
+footer{margin-top:64px;color:var(--ink-3);font-size:.82rem;max-width:72ch}
+a{color:var(--steel)}
+@media(prefers-reduced-motion:no-preference){.seg{transition:flex-grow .28s ease}}
+</style>
+
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="kicker">
+    <span class="tag">Space Exploration 0.7.57</span>
+  </div>
+  <h1>Rocket logistics calculators</h1>
+</header>
+
+<section id="calc">
+  <div class="sechead"><span class="eyebrow">Sending side</span><span class="rule"></span>
+    <label class="toggle" for="buf" title="Storage between the cell and the silos">
+      <input type="checkbox" id="buf" checked><span class="track"></span><span class="lab">Buffer</span>
+    </label>
+  </div>
+  <div class="panel calc">
+    <div class="inputs">
+      <div class="field">
+        <label for="thru">Throughput</label>
+        <input id="thru" type="number" value="" min="1" step="10" placeholder="â€”">
+        <span class="hint">items / second to export</span>
+      </div>
+      <div class="field">
+        <label for="stack">Stack size</label>
+        <input id="stack" type="number" value="100" min="1" max="1000" step="1">
+        <span class="hint">the number that drives everything</span>
+      </div>
+      <div class="field">
+        <label for="trip">Fuel per trip</label>
+        <input id="trip" type="number" value="100000" min="1000" step="5000">
+        <span class="hint">30k near Â· 150k far side</span>
+      </div>
+      <div class="field">
+        <label for="pads">Silos</label>
+        <input id="pads" type="number" value="" min="1" step="1" placeholder="auto">
+        <span class="hint" id="padshint">blank for the minimum</span>
+      </div>
+      <div class="field">
+        <label for="geom">Arm cycle</label>
+        <input id="geom" type="number" value="24" min="2" step="2">
+        <span class="hint" id="geomhint">ticks per swing</span>
+      </div>
+      <div class="field">
+        <label for="env">Location</label>
+        <select id="env">
+          <option value="0" selected>Ground</option>
+          <option value="1">Space</option>
+        </select>
+        <span class="hint">space refineries cannot take productivity</span>
+      </div>
+      <div class="field">
+        <label for="hand">Hand size</label>
+        <input id="hand" type="number" value="16" min="1" step="1">
+        <span class="hint">items per stack-inserter swing</span>
+      </div>
+      <div class="field">
+        <label for="tier">Module tier</label>
+        <select id="tier">
+          <option value="9" selected>Tier 9</option>
+          <option value="8">Tier 8</option>
+          <option value="7">Tier 7</option>
+          <option value="6">Tier 6</option>
+          <option value="5">Tier 5</option>
+          <option value="4">Tier 4</option>
+          <option value="3">Tier 3</option>
+          <option value="2">Tier 2</option>
+          <option value="1">Tier 1</option>
+          <option value="0">No modules</option>
+        </select>
+        <span class="hint" id="tierhint">refinery + beacon</span>
+      </div>
+      <div class="field">
+        <label for="reuse">Reusability</label>
+        <input id="reuse" type="number" value="0.2" min="0.2" max="1" step="0.04">
+        <span class="hint">0.2 + 0.04 per researched level</span>
+      </div>
+      <div class="field">
+        <label for="secarms">Section feed</label>
+        <select id="secarms">
+          <option value="25" selected>Robots</option>
+          <option value="14.4">3 stack inserters</option>
+          <option value="21.6">2 stack inserters</option>
+          <option value="43.3">1 stack inserter</option>
+        </select>
+        <span class="hint">seconds to land 100 sections + 1 capsule</span>
+      </div>
+      <div class="field">
+        <label for="rt">Train round trip</label>
+        <input id="rt" type="number" value="180" min="10" step="10">
+        <span class="hint">seconds, for the parts train</span>
+      </div>
+      <div class="field">
+        <label for="wagon">Wagon size</label>
+        <input id="wagon" type="number" value="50" min="1" step="1">
+        <span class="hint">slots; parts and capsules both stack to 1</span>
+      </div>
+    </div>
+
+    <div class="readout" id="readout"></div>
+
+    <div class="timeline">
+      <div class="eyebrow" style="margin-bottom:9px">One silo cycle â€” <span id="cyclelen" class="mono"></span></div>
+      <div class="bar" id="bar"></div>
+      <div class="legend">
+        <span><i style="background:#7a5a86"></i>Ascent lockout â€” silo frozen, sections queue in the container</span>
+        <span><i style="background:var(--steel)"></i>Silo animation</span>
+        <span><i style="background:var(--flare)"></i>Filling 500 stacks</span>
+      </div>
+      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">cycle = max(18.33, section delivery) + max(15, 500 Ã— stack Ã· fill rate)</p>
+    </div>
+  </div>
+</section>
+
+<section id="recv">
+  <div class="sechead"><span class="eyebrow">Receiving side</span><span class="rule"></span>
+    <label class="toggle" for="r_buf" title="Storage between the pad and the belts">
+      <input type="checkbox" id="r_buf" checked><span class="track"></span><span class="lab">Buffer</span>
+    </label>
+  </div>
+  <div class="panel calc">
+    <div class="inputs">
+      <div class="field">
+        <label for="r_thru">Consumption</label>
+        <input id="r_thru" type="number" value="" min="1" step="10" placeholder="â€”">
+        <span class="hint">items / second the belts take away</span>
+      </div>
+      <div class="field">
+        <label for="r_stack">Stack size</label>
+        <input id="r_stack" type="number" value="100" min="1" max="1000" step="1">
+        <span class="hint">the number that drives everything</span>
+      </div>
+      <div class="field">
+        <label for="r_pads">Pads</label>
+        <input id="r_pads" type="number" value="" min="1" step="1" placeholder="auto">
+        <span class="hint" id="r_padshint">blank for the minimum</span>
+      </div>
+      <div class="field">
+        <label for="r_geom">Arm cycle</label>
+        <input id="r_geom" type="number" value="2" min="2" step="2">
+        <span class="hint" id="r_geomhint">ticks per swing</span>
+      </div>
+      <div class="field">
+        <label for="r_hand">Hand size</label>
+        <input id="r_hand" type="number" value="16" min="1" step="1">
+        <span class="hint">items per stack-inserter swing</span>
+      </div>
+      <div class="field">
+        <label for="r_reuse">Reusability</label>
+        <input id="r_reuse" type="number" value="0.2" min="0.2" max="1" step="0.04">
+        <span class="hint">0.2 + 0.04 per researched level</span>
+      </div>
+    </div>
+
+    <div class="readout" id="r_readout"></div>
+
+    <div class="timeline">
+      <div class="eyebrow" style="margin-bottom:9px">Buffer level over one landing interval â€” <span id="r_cyclelen" class="mono"></span></div>
+      <div class="bar" id="r_bar"></div>
+      <div class="legend">
+        <span><i style="background:var(--flare)"></i>Pad draining into storage</span>
+        <span><i style="background:var(--steel)"></i>Storage feeding the belts alone</span>
+        <span><i style="background:#7a5a86"></i>Reserve, eaten only when a rocket is late</span>
+      </div>
+      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">capacity = consumption Ã— late-by + rocket Ã— (drain âˆ’ consumption) Ã· drain</p>
+    </div>
+  </div>
+</section>
+
+<!-- Source-of-truth constants, kept in the document but not rendered. Everything the calculator
+     computes is derived from the values below; open this template to check an assumption. -->
+<template id="mechanics">
+<section>
+  <div class="sechead"><span class="eyebrow">Mechanics</span><span class="rule"></span></div>
+  <p class="subhead">Read out of <code>scripts/launchpad.lua</code> and the launch-pad prototypes, not inferred. These are the numbers the model is built on.</p>
+
+  <div class="panel pad">
+    <dl class="consts">
+      <dt>rocket_capacity = 500</dt>
+      <dd>Slots in the launch pad, so a rocket carries <strong>500 Ã— stack size</strong> items. During the build, two slots are filter-reserved for a section and a capsule; both filters clear the moment the rocket completes, so a finished rocket ships all 500.</dd>
+
+      <dt>section stack_size = 1</dt>
+      <dd>100 sections is 100 inventory slots and, on an inserter feed, 100 separate swings â€” one arm at a 26-tick cycle needs 43 s. <code>se-cargo-rocket-section-packed</code> holds 5 sections in one slot, both stack size 1 â€” <strong>ship packed, unpack on site</strong> for 5Ã— the train density.</dd>
+
+      <dt>construction helper Â· item-request-proxy</dt>
+      <dd>Your build feeds sections by bot. <code>se-cargo-rocket-construction-helper</code> puts an <code>item-request-proxy</code> on the pad for the missing sections and capsule, and construction bots fill it in one wave â€” which is the 30 s you measured, not 100 swings. Two things to know: it polls on <code>on_nth_tick(600)</code>, so <strong>0â€“10 s of pure latency</strong> passes before the request even appears (the event-driven hook that would fire it instantly is commented out in 2.0.1), and the proxy claims <strong>specific slots, 498 counting down</strong>. Cargo sitting in those slots blocks the delivery.</dd>
+
+      <dt>time_takeoff_finish_ascent = 1100</dt>
+      <dd><strong>18.33 s</strong>. The pad stays locked after launch until the ascent finishes; only then does <code>prep</code> resume taking sections. This is the hard floor of the cycle, not the "couple of seconds" it looks like. Inserters can still stuff sections into the container during the lockout, so a fast section feed hides entirely inside it.</dd>
+
+      <dt>silo animation</dt>
+      <dd>Doors 4.25 s + three blinks + rise â‰ˆ <strong>15 s</strong> after the rocket completes, during which it cannot leave. Filling runs in parallel, so it only costs you when the cargo fills faster than 15 s.</dd>
+
+      <dt>Launchpad.prep â€” every 60 ticks</dt>
+      <dd>Sections and capsules move from the container into the rocket once per second, in bulk. No throughput limit as long as there are free slots â€” which is exactly why the cargo arms must stay gated on <code>se-cargo-rocket = 1</code>. Fill the container first and sections trickle in through the single reserved slot at 1/s: a 100-second build. With a bot feed the gate matters even more, because the proxy needs 100 named slots free.</dd>
+
+      <dt>rocket_cost_p = 0.5 + 0.5 Ã— used/500</dt>
+      <dd>An empty rocket still costs <strong>50 sections and half the fuel</strong>. A half-full one costs 75 sections and 75% fuel â€” 1.5Ã— the cost per item. Only ever launch on <em>cargo full</em>.</dd>
+
+      <dt>fuel_per_delta_v = 8</dt>
+      <dd>Trip cost is pure delta-v: ~30k fuel near, ~150k across the system. The pad banks <code>required_fuel</code> plus whatever fits in its 11,000-unit tank and no more â€” surplus buffering belongs in your own tanks.</dd>
+
+      <dt>se-liquid-rocket-fuel</dt>
+      <dd>1 rocket fuel â†’ 50 liquid, 1 s, fuel refinery, <code>allow_productivity</code>. Beaconed with 3Ã— prod-9: <strong>760 liquid/s</strong> per refinery off 9.5 items/s. With your current 3Ã— prod-3 and a speed-3 beacon: 272.8 liquid/s.</dd>
+
+      <dt>reusability = 0.2 + 0.04 Ã— level</dt>
+      <dd>Recovered sections land at the <em>destination</em>. So the sections arriving here come off the fuel rockets sent to you â€” about 100 Ã— reusability each, one capsule each.</dd>
+
+      <dt>landing pad = 610 slots</dt>
+      <dd>500 cargo + 110 for recovered sections and the capsule. A pure fuel rocket lands 5,000 rocket fuel = <strong>400,000 liquid</strong> at prod-9, which is four launches' worth. Hence the fixed 1:4 ratio.</dd>
+
+      <dt>pad combinator signals</dt>
+      <dd><code>se-liquid-rocket-fuel</code> (Lua-side fuel only, under-reads by up to 10k), <code>se-cargo-rocket-section</code>, <code>se-space-capsule</code>, <code>se-cargo-rocket</code> = 1 when built, <code>E</code> empty stacks, <code>F</code> used stacks, <code>L</code> required fuel. Everything you need to gate arms and watch a stuck pad.</dd>
+    </dl>
+  </div>
+
+  <div class="note"><strong>The cycle, in one line.</strong> <code class="mono">cycle = max(18.33, section_delivery) + max(15, 500 Ã— S / fill_rate)</code>. Your bot feed lands at about 25 s, so the first term is already within 7 s of the floor and there is very little left to win there.</div>
+</section>
+</template>
+
+
+<footer>
+  Constants verified against Space Exploration 0.7.57 source: <code>scripts/launchpad.lua</code>, <code>prototypes/phase-1/entity/rocket-launch-pad.lua</code>, <code>prototypes/phase-3/recipe.lua</code>, <code>prototypes/phase-1/item/resources.lua</code>, and <code>se-cargo-rocket-construction-helper</code> 2.0.1. Belt trunk is the white deep-space belt at 90 items/s loose, 360 stacked. Refinery rates assume a <code>se-wide-beacon-2</code> at +10.0 speed and 3Ã— prod-9 at +0.60 productivity.
+</footer>
+
+</div>
+
+<script>
+(function(){
+  // ---- constants, all source- or measurement-backed ----
+  var LOCK = 1100/60;     // ascent lockout, time_takeoff_finish_ascent = 1100 ticks
+  var ANIM = 15;          // silo doors + blinks before a completed rocket can leave
+  var SLOTS = 500;        // rocket_capacity
+  var BELT = 360;         // white deep-space belt, fully stacked
+  var PACK = 5;           // 1 packed section unpacks to 5
+
+  // Inserter throughput, measured - see INSERTER_SPEED_REFERENCE.md:
+  //   rot = angle_deg/14.4, ext = |rP-rD|/0.1, cycle = 2*floor(max(rot,ext))   [15 runs]
+  // A belt on either side costs a FLAT +3.28 ticks, not a proportion. Measured over eight
+  // configurations from 2 to 30 ticks in one run; the delta never left 3.11-3.44 and did not
+  // care about approach angle, drop lane, or whether the arm was rotation- or extension-bound.
+  // A belt on BOTH sides costs it twice. Container pickup and container drop are free.
+  var BELT_TICKS = 3.28;
+  // One arm loads or unloads ONE lane, and a lane of a fully stacked deep-space belt moves
+  // 3 items/tick. So a single arm tops out near 180/s no matter how fast its geometry is -
+  // a 2-tick arm measured 176.4/s. Saturating a 360/s belt takes two arms, one per side.
+  var LANE_CAP = 180;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var ids = ["thru","stack","secarms","pads","geom","hand","trip","env","tier","reuse","rt","wagon"];
+
+  // SE module effects per tier, index 0 = no module. prototypes/phase-2/modules.lua
+  var SPD = [0,0.20,0.30,0.40,0.50,0.60,0.70,0.80,0.90,1.00];
+  var PRD = [0,0.04,0.06,0.08,0.10,0.12,0.14,0.16,0.18,0.20];
+  var PEN = [0,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50];
+
+  // se-fuel-refinery: crafting_speed 1, 3 slots, 1 rocket fuel -> 50 liquid in 1 s.
+  // se-wide-beacon-2: 20 slots at distribution_effectivity 0.5, so 10x the module bonus.
+  // In space the machine becomes se-fuel-refinery-spaced, which drops productivity from
+  // allowed_effects, so its own three slots carry speed instead.
+  function refinery(tier, space){
+    var beacon = 10*SPD[tier];
+    var mult = space ? 1 + beacon + 3*SPD[tier] : 1 + beacon - 3*PEN[tier];
+    var prod = space ? 1 : 1 + 3*PRD[tier];
+    return { rate: mult*50*prod, perItem: 50*prod };
+  }
+
+  function fmt(n,d){
+    if(!isFinite(n)) return "â€”";
+    d = d===undefined ? (Math.abs(n)>=100?0:(Math.abs(n)>=10?1:2)) : d;
+    return n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+  }
+
+  function num(id, lo){
+    var raw = $(id).value.trim();
+    if(raw === "") return NaN;
+    var n = +raw;
+    return isFinite(n) && n >= lo ? n : NaN;
+  }
+
+  function read(){
+    return {
+      thru:    num("thru", 0.001),
+      stack:   num("stack", 1),
+      secarms: +$("secarms").value,
+      pads:    num("pads", 1),
+      geom:    num("geom", 1),
+      hand:    num("hand", 1),
+      trip:    num("trip", 1),
+      env:     +$("env").value,
+      tier:    +$("tier").value,
+      reuse:   num("reuse", 0),
+      buf:     $("buf").checked,
+      rt:      num("rt", 1),
+      wagon:   num("wagon", 1)
+    };
+  }
+
+  function model(v){
+    var C = SLOTS * v.stack;
+    var overhead = Math.max(LOCK, v.secarms);
+
+    var ceiling  = v.hand * 60 / v.geom;
+    var perBelt  = Math.min(v.hand * 60 / (v.geom + BELT_TICKS), LANE_CAP);
+    var perStore = ceiling;
+
+    // Fewest silos that can work at all: the fill window cannot beat the silo animation.
+    var minPads = Math.max(1, Math.ceil(v.thru * (overhead + ANIM) / C));
+    var pads = isFinite(v.pads) ? Math.max(1, Math.round(v.pads)) : minPads;
+
+    // Everything below follows from conservation. The cell sets the launch rate, the silo
+    // count sets each silo's cycle, and the arms only have to fill what is left of it.
+    var L        = v.thru / C;
+    var cycle    = pads / L;
+    var fill     = cycle - overhead;
+    var feasible = fill >= ANIM;
+    var needRate = feasible ? C / fill : NaN;
+    var eff = v.thru, openLo = NaN, openHi = NaN, fracHi = NaN, padCap = NaN;
+
+    // ---- no-buffer mode ---------------------------------------------------------------------
+    // With storage between cell and silos the cell runs flat out and the buffer eats the dead
+    // window, so the requested throughput IS the throughput. Without storage the cell can only
+    // push while a silo is open, and only as fast as that silo's arms swallow.
+    //
+    // Stagger N silos evenly and each fill window overlaps its neighbour's, so the number open at
+    // any instant alternates between floor(k) and floor(k)+1, where k = N * fill/cycle. Output is
+    // the time-weighted min of what the cell makes and what those open silos can take.
+    //
+    // Two things make this self-limiting rather than impossible, which is why - unlike the
+    // buffered path - it still answers below minPads instead of dashing: a silo can never cycle
+    // faster than overhead + ANIM, capping the system at pads*C/(overhead+ANIM); and a lower
+    // output lengthens the cycle, which widens the fill window, which opens more silos. Solved by
+    // damped iteration, since the hard cap and the stagger term otherwise oscillate against
+    // each other. Everything downstream then runs off the achieved rate, not the asked-for one.
+    if (!v.buf) {
+      var capT = pads * C / (overhead + ANIM);
+      eff = Math.min(v.thru, capT);
+      for (var it = 0; it < 200; it++) {
+        var cyc2 = pads * C / eff, fill2 = cyc2 - overhead;
+        var need2 = C / fill2, arms2 = Math.ceil(need2 / perStore);
+        padCap = arms2 * perStore;
+        var k = pads * (fill2 / cyc2);
+        openLo = Math.floor(k); openHi = openLo + 1; fracHi = k - openLo;
+        var next = Math.min(capT, fracHi * Math.min(v.thru, openHi * padCap) +
+                                  (1 - fracHi) * Math.min(v.thru, openLo * padCap));
+        if (Math.abs(next - eff) < 1e-7) { eff = next; break; }
+        eff = 0.5 * (eff + next);                       // damped, or the cap makes it ring
+      }
+      // re-derive the whole cycle from what the cell actually achieves
+      L = eff / C;
+      cycle = pads / L;
+      fill = cycle - overhead;
+      needRate = C / fill;
+      feasible = eff > 0;
+    }
+
+    var armsBelt  = feasible ? Math.ceil(needRate/perBelt)  : NaN;
+    var armsStore = feasible ? Math.ceil(needRate/perStore) : NaN;
+
+    // Belts carry the peak draw, not the average: every silo can be filling at once.
+    var peak  = feasible ? pads * needRate : NaN;
+    var belts = Math.ceil(peak / BELT);
+
+    var ref = refinery(v.tier, v.env);
+    var fuel = L * v.trip;
+    var refineries = Math.ceil(fuel / ref.rate);
+    var rfItems = fuel / ref.perItem;
+    var arrivals = rfItems / (SLOTS*10);
+    var ratio = SLOTS*10*ref.perItem / v.trip;
+
+    var secNet = Math.max(0, 100*L - 100*v.reuse*arrivals);
+    var capNet = Math.max(0, L - arrivals);
+    var wagPart = secNet*v.rt/PACK/v.wagon;
+    var wagCap  = capNet*v.rt/v.wagon;
+
+    var tanks = Math.max(1, Math.ceil(pads*v.trip/25000));
+    var landing = Math.max(1, Math.ceil(arrivals*50));
+
+    // Worst case: every silo dead at once, so nothing accepts for `overhead` seconds while
+    // the cell keeps producing. Simulation stalls ~0.1% at exactly that, so carry 20%.
+    var bufStacks = Math.ceil(1.2 * overhead * v.thru / v.stack);
+
+    return {C:C, overhead:overhead, cycle:cycle, fill:fill, needRate:needRate, feasible:feasible,
+            L:L, pads:pads, minPads:minPads, ceiling:ceiling, perBelt:perBelt, perStore:perStore,
+            armsBelt:armsBelt, armsStore:armsStore, peak:peak, belts:belts,
+            padCap:padCap, eff:eff, openLo:openLo, openHi:openHi, fracHi:fracHi,
+            fuel:fuel, refineries:refineries, rfItems:rfItems, arrivals:arrivals, ratio:ratio,
+            secNet:secNet, capNet:capNet, wagPart:wagPart, wagCap:wagCap,
+            tanks:tanks, landing:landing, bufStacks:bufStacks, ref:ref};
+  }
+
+  function render(){
+    var v = read(), m = model(v);
+
+    $("geomhint").textContent = fmt(m.perStore,1)+" /s from storage Â· "+fmt(m.perBelt,1)+
+      " /s off a belt (+"+BELT_TICKS+" t"+(m.perBelt >= LANE_CAP ? ", lane-capped" : "")+")";
+    $("padshint").textContent = !isFinite(m.minPads) ? "blank for the minimum"
+      : !isFinite(v.pads) ? "auto: "+m.minPads
+      : (!v.buf && v.pads < m.minPads) ? "under "+m.minPads+" â€” output shown is what you get"
+      : "minimum is "+m.minPads;
+    $("tierhint").textContent = v.tier===0
+      ? "no beacon, 50 liquid/s each"
+      : (v.env ? "3Ã— speed-"+v.tier : "3Ã— prod-"+v.tier) + " + speed-"+v.tier+
+        " beacon, "+fmt(m.ref.rate,0)+" liquid/s each";
+
+    // Buffered and under minPads is a genuinely impossible build, not merely a small one: dash
+    // every derived figure so it reads as "no answer" rather than a set of numbers to act on,
+    // and turn the silo count red, since that is the input at fault.
+    var broke = v.buf && !m.feasible && isFinite(m.pads) && isFinite(m.L);
+    var sized = isFinite(m.pads) && isFinite(m.L) && !broke;
+    var f = function(n,d){ return sized ? fmt(n,d) : "â€”"; };
+
+    // Two cells are computed but not rendered. Both are sized for a DIRECT feed - belts running
+    // into the silo with nothing to absorb the dead time - and this build always buffers:
+    //   cell --belts--> buffer --arms--> silo
+    //        1584/s avg          2623/s peak
+    // m.armsBelt is then not the silo head at all (that is m.armsStore), and m.belts is sized on
+    // the peak when a buffered trunk only carries the average, Math.ceil(v.thru / BELT).
+    // Kept live so they can be put back behind a Direct/Buffered switch without redoing the model.
+    var cells = [
+      // what you place
+      ["hero g1"+(broke ? " bad" : ""), "Silos", isFinite(m.pads) ? fmt(m.pads,0) : "â€”", ""],
+      ["g1","Stack inserters Â· storage", f(m.armsStore,0), "per silo"]
+    ];
+    // With the buffer on, the stacks are a thing you build. With it off they do not exist, and
+    // what matters instead is what the cell actually gets away with.
+    if (v.buf) cells.push(["g1","Buffer storage", f(m.bufStacks,0), "stacks"]);
+    else cells.push(["g1","Effective output", f(m.eff,0), "/s"]);
+    cells = cells.concat([
+      // how it runs
+      ["g2","Silo cycle", f(m.cycle,1), "s"],
+      ["g2","Fill rate needed", f(m.needRate,0), "/s"],
+      ["g2","Launches", f(v.buf ? m.L*60 : m.eff/m.C*60, 2), "/min"],
+      ["g2","Items / rocket", f(m.C,0), ""],
+      // refuelling
+      ["g3","Fuel refineries", f(m.refineries,0), ""],
+      ["g3","Fluid tanks", f(m.tanks,0), ""],
+      ["g3","Liquid fuel", f(m.fuel,0), "/s"],
+      ["g3","Pads", f(m.landing,0), ""],
+      ["g3","Rockets out : in", sized ? fmt(m.ratio,1)+" : 1" : "â€”", ""],
+      // what the train brings
+      ["g4","Packed parts", f(m.wagPart,2), "wagons"],
+      ["g4","Capsules", f(m.wagCap,3), "wagons"]
+    ]);
+    $("readout").innerHTML = cells.map(function(c){
+      var dash = c[2] === "â€”";
+      return '<div class="cell '+c[0]+'"><div class="k">'+c[1]+'</div><div class="v'+(dash?' none':'')+'">'+
+             c[2] + (c[3] && !dash ? '<u>'+c[3]+'</u>' : '')+'</div></div>';
+    }).join("");
+
+    // ---- cycle timeline ----
+    var drawable = sized && m.feasible && isFinite(m.cycle) && m.cycle > 0;
+    var buildOver = Math.max(0, m.overhead - LOCK);
+    var segs = [
+      ["lock","lockout "+fmt(LOCK,1)+"s", Math.min(m.overhead, LOCK)],
+      ["lock","sections +"+fmt(buildOver,1)+"s", buildOver],
+      ["anim","animation "+ANIM+"s", Math.min(ANIM, m.fill)],
+      ["fill","fill "+fmt(Math.max(0,m.fill-ANIM),0)+"s", Math.max(0, m.fill-ANIM)]
+    ];
+    $("bar").innerHTML = broke
+      ? '<div class="seg bad" style="flex:1 1 0">impossible â€” '+m.minPads+' silos minimum</div>'
+      : !drawable ? "" : segs.filter(function(s){return s[2]>0.05;}).map(function(s){
+          return '<div class="seg '+s[0]+'" style="flex:'+s[2]+' 1 0" title="'+s[1]+'">'+
+                 (s[2]/m.cycle>0.13 ? s[1] : "")+'</div>';
+        }).join("");
+    $("cyclelen").textContent = broke ? "the fill window falls under the "+ANIM+" s animation"
+      : drawable ? fmt(m.cycle,1)+" s, "+fmt(100*m.overhead/m.cycle,0)+"% of it dead time"
+      : "â€”";
+
+  }
+
+  ids.forEach(function(id){ $(id).addEventListener("input", render); });
+  $("buf").addEventListener("change", render);
+
+  // ================= receiving side =================
+  // A landing pad is se-rocket-landing-pad, inventory_size = rocket_capacity + 110 = 610 slots
+  // (rocket-landing-pad.lua:31). 500 of those are the cargo, the other 110 hold the recovered
+  // sections and the capsule, which have to be cleared too or the pad clogs.
+  //
+  // Nothing on this side is a cycle in the silo sense - the pad fills in one instant and then
+  // waits. In steady state a rocket lands every C/R seconds and the belts eat R the whole time,
+  // so over one interval delivery and consumption cancel exactly. What that means is that a
+  // perfectly punctual line needs NO reserve at all, and every stack you keep is there to cover
+  // a rocket arriving late. That is the "late by" input, and it alone sets the floor.
+  //
+  // Capacity is a different number from the floor. Draining the pad faster than the belts consume
+  // piles the difference into storage, so the peak is the reserve plus that transient. Drain at
+  // exactly R and the transient vanishes but the pad never clears; drain instantly and you must
+  // warehouse an entire rocket. That trade is the whole design.
+  var R_IDS = ["r_thru","r_stack","r_pads","r_geom","r_hand","r_reuse"];
+  var PAD_SLOTS = 610;                    // rocket_capacity + 110, rocket-landing-pad.lua:31
+
+  // Both of these used to be inputs and neither should have been - they are engine constants,
+  // not preferences. scripts/launchpad.lua:43,47:
+  //   time_takeoff_finish_ascent = 1100 t = 18.33 s
+  //   time_landing_cargopod_last =  300 t =  5.00 s
+  // tick_journey_transition sets land_timer = 0 the moment ascent ends, so there is no travel
+  // time between surfaces - a replacement rocket is ASCENT + LAND from launch to cargo down.
+  var ASCENT = 1100/60, LAND = 300/60, RECOVER = ASCENT + LAND;
+  // A missed slot is covered by the next rocket launching immediately, so one recovery is the
+  // real exposure. Two consecutive misses is the case worth insuring against and no more.
+  var LATE = 2 * RECOVER;
+
+  function rmodel(v){
+    var C = SLOTS * v.stack;                       // items delivered per rocket
+    var interval = C / v.thru;                     // seconds between landings, all pads together
+    var minPads  = Math.max(1, Math.ceil(LAND / interval));
+    var pads     = isFinite(v.pads) ? Math.max(1, Math.round(v.pads)) : minPads;
+    var perPad   = interval * pads;                // one pad only sees every Nth rocket
+
+    // Use the whole window the pad is idle for. Draining slower is impossible - the next rocket
+    // needs the slots - and draining faster only buys transient storage nobody wants.
+    var clear    = Math.max(0.1, perPad - LAND);
+    var gap      = LATE;
+    var drain    = C / clear;                      // pad -> storage rate needed
+    var perArm   = v.hand * 60 / v.geom;                                  // container to container
+    var perBelt  = Math.min(v.hand * 60 / (v.geom + BELT_TICKS), LANE_CAP); // container to belt
+
+    var armsIn   = Math.ceil(drain / perArm);      // per pad
+    var armsOut  = Math.ceil(v.thru / perBelt);    // total, storage onto belts
+    var beltsOut = Math.ceil(v.thru / BELT);
+
+    var reserve  = v.thru * gap;                            // never consumed unless a rocket slips
+    var transient= C * Math.max(0, drain - v.thru) / drain;  // what the fast drain piles up
+    var capacity = reserve + transient;
+
+    // What comes back down alongside the cargo. Sections stack to 1, so slots == items, and the
+    // pad reserves PAD_SLOTS - SLOTS = 110 of them for the worst case: 100 sections at
+    // reusability 1.0, the capsule, and 9 spare. What actually lands is set by the research.
+    var landings = v.thru / C;
+    // Without storage the pad's own 500 cargo slots are the buffer, and they are empty for the
+    // whole landing sequence - the last cargo pod is not down until LAND seconds in. The belts
+    // therefore stop dead for LAND out of every interval, and a downstream that cannot pause
+    // only gets the rest of it.
+    var uptime = Math.max(0, (interval - LAND) / interval);
+    var eff    = v.buf ? v.thru : v.thru * uptime;
+
+    var hw       = (100 * v.reuse + 1) * landings;   // sections + capsule, slots/s, loose
+    var packed   = 100 * v.reuse * landings / PACK;  // the same sections repacked 5 to a slot
+    var feasible = clear > 1;
+    return { C:C, interval:interval, perPad:perPad, pads:pads, minPads:minPads, drain:drain,
+             clear:clear, gap:gap, uptime:uptime, eff:eff, perArm:perArm, perBelt:perBelt, armsIn:armsIn,
+             armsOut:armsOut, beltsOut:beltsOut,
+             reserve:reserve, transient:transient, capacity:capacity, hw:hw, packed:packed,
+             feasible:feasible };
+  }
+
+  function rread(){
+    var num = function(id, min){ var n = parseFloat($(id).value); return isFinite(n) && n >= min ? n : NaN; };
+    return { thru:num("r_thru",0.001), stack:num("r_stack",1), pads:num("r_pads",1),
+             geom:num("r_geom",1), hand:num("r_hand",1), reuse:num("r_reuse",0),
+             buf:$("r_buf").checked };
+  }
+
+  function rrender(){
+    var v = rread();
+    var ok = isFinite(v.thru) && isFinite(v.stack) && isFinite(v.geom) &&
+             isFinite(v.hand) && isFinite(v.reuse);
+    var m = ok ? rmodel(v) : {};
+    var f = function(n,d){ return ok && isFinite(n) ? fmt(n,d) : "â€”"; };
+    var st = function(n){ return ok && isFinite(n) ? fmt(Math.ceil(n / v.stack),0) : "â€”"; };
+
+    $("r_geomhint").textContent = ok
+      ? fmt(m.perArm,1)+" /s pad â†’ storage Â· "+fmt(m.perBelt,1)+" /s storage â†’ belt"
+      : "ticks per swing";
+    $("r_padshint").textContent = ok ? (isFinite(v.pads) ? "minimum is "+m.minPads : "auto: "+m.minPads)
+                                     : "blank for the minimum";
+
+    // Four more computed-but-dark cells. m.reserve and m.gap are the insurance half of
+    // m.capacity, m.clear and m.drain the mechanics that produce the other half - all four are
+    // explained in the note under the bar, so the readout carries only what gets built.
+    var cells = [
+      ["hero g1","Pads", f(m.pads,0), ""],
+      (v.buf ? ["g1","Buffer storage", st(m.capacity), "stacks"]
+             : ["g1","Effective output", f(m.eff,0), "/s"]),
+      ["g1","Arms Â· pad â†’ storage", f(m.armsIn,0), "per pad"],
+      ["g1","Arms Â· storage â†’ belt", f(m.armsOut,0), ""],
+      ["g2","Landing interval", f(m.interval,1), "s"],
+      ["g2","Belts out", f(m.beltsOut,0), ""],
+      ["g2","Sections + capsule", f(m.hw,2), "slots/s"],
+      ["g2","Packed parts", f(m.packed,2), "slots/s"]
+    ];
+    $("r_readout").innerHTML = cells.map(function(c){
+      var dash = c[2] === "â€”";
+      return '<div class="cell '+c[0]+'"><div class="k">'+c[1]+'</div><div class="v'+(dash?' none':'')+'">'+
+             c[2] + (c[3] && !dash ? '<u>'+c[3]+'</u>' : '')+'</div></div>';
+    }).join("");
+
+    $("r_cyclelen").textContent = ok ? fmt(m.interval,1)+" s" : "â€”";
+    if(!ok){ $("r_bar").innerHTML = ""; return; }
+
+    // the bar is the interval split into the draining phase and the coasting phase
+    var drainT = Math.min(m.clear, m.interval), coast = Math.max(0, m.interval - drainT);
+    var segs = [["fill", drainT, "draining "+fmt(drainT,1)+"s"],
+                ["anim", coast,  "coasting "+fmt(coast,1)+"s"]];
+    $("r_bar").innerHTML = m.feasible ? segs.map(function(s){
+      var pct = 100*s[1]/m.interval;
+      return pct <= 0 ? "" : '<div class="seg '+s[0]+'" style="flex:0 0 '+pct.toFixed(3)+'%">'+
+        (pct > 13 ? s[2] : "")+'</div>';
+    }).join("") : '<div class="seg bad" style="flex:1 1 0">impossible â€” landings closer than the '+
+      fmt(LAND,1)+' s cargo drop</div>';
+  }
+
+  R_IDS.forEach(function(id){ $(id).addEventListener("input", rrender); });
+  $("r_buf").addEventListener("change", rrender);
+
+  render();
+  rrender();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: se-rocket-logistics-calculators
+    runtime: static
+    # Nothing to build - index.html is the whole site.
+    buildCommand: ""
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
