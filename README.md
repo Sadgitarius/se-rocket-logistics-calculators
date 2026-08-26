@@ -67,7 +67,7 @@ Three buttons at the top right:
   small JSON file. Keep one per base, or paste one into a thread when you want someone to check
   your numbers.
 - **Import** — loads a settings file back into both calculators.
-- **Reset** — puts every setting back to its default and forgets the saved ones. It asks first.
+- **Reset** — puts every setting back to its default and forgets the saved ones.
 
 Saved files — and the browser-local copy, which uses the same format — are built to survive later
 versions of this page:

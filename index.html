@@ -1023,7 +1023,6 @@ a{color:var(--steel)}
   });
 
   $("btn_reset").addEventListener("click", function(){
-    if (!confirm("Put every setting on both calculators back to its default?")) return;
     apply(DEFAULTS);
     try { localStorage.removeItem(STORE); } catch (err) {}
     say("Reset to defaults");
