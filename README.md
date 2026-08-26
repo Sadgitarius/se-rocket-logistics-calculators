@@ -40,6 +40,12 @@ The thing that surprises everyone: **a silo only accepts for about half of its c
 part of the feed upstream has to run well above the cell's average rate. At 1,584 /s with stack 200
 the silo needs ~2,623 /s during its 38 s fill window.
 
+**Section feed** is 101 items — 100 sections plus the capsule — and every one is stack size 1, so
+an inserter carries exactly one per swing and hand size cannot help. The feed is
+`101 × arm cycle ÷ 60 ÷ inserters`, which is why a fast arm can pull the cycle down to the
+18.33 s lockout floor and save a silo. The bot option is 35 s: a 30 s wave, plus the construction
+helper's `on_nth_tick(600)` poll adding 0–10 s before the request even appears.
+
 ### Receiving side
 
 A rocket lands, dumps 500 slots into a pad, and leaves. The page tells you:

@@ -178,10 +178,20 @@ header.top + section{padding-top:22px}   /* the masthead already carries the air
 }
 .field{display:flex;flex-direction:column;gap:5px}
 .field label{font-family:"IBM Plex Mono",monospace;font-size:.65rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+/* Mobile browsers restyle form controls unless appearance is cleared, and they size selects to
+   their own metrics — so height is stated outright rather than left to fall out of padding. */
 .field input,.field select{
-  font-family:"IBM Plex Mono",monospace;font-size:.92rem;font-weight:500;
+  font-family:"IBM Plex Mono",monospace;font-size:.92rem;font-weight:500;line-height:1.2;
   background:var(--panel);color:var(--ink);border:1px solid var(--line);
-  border-radius:3px;padding:7px 9px;width:100%;
+  border-radius:3px;padding:7px 9px;width:100%;height:36px;
+  -webkit-appearance:none;-moz-appearance:none;appearance:none;
+}
+/* clearing appearance also removes the native caret, so draw one. One mid grey, legible on both
+   themes' grounds — a data URI cannot pick up currentColor. */
+.field select{
+  padding-right:28px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%237b8593' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:11px 8px;
 }
 .field input:focus,.field select:focus{outline:2px solid var(--flare);outline-offset:1px;border-color:var(--flare)}
 .field input:disabled,.field select:disabled{opacity:.5;cursor:not-allowed;background:var(--panel-2)}
@@ -237,6 +247,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
   section{padding-top:38px}
   header.top + section{padding-top:18px}
   .inputs{padding:16px 14px;gap:14px 14px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  .field input,.field select{height:42px}   /* a touch target, not a mouse target */
   .readout{grid-template-columns:repeat(auto-fit,minmax(124px,1fr))}
   .cell{padding:13px 12px}
   .cell .v{font-size:1.4rem}
@@ -402,12 +413,13 @@ a{color:var(--steel);overflow-wrap:anywhere}
       <div class="field">
         <label for="secarms">Section feed</label>
         <select id="secarms">
-          <option value="25" selected>Robots</option>
-          <option value="14.4">3 stack inserters</option>
-          <option value="21.6">2 stack inserters</option>
-          <option value="43.3">1 stack inserter</option>
+          <option value="bots" selected>Robots</option>
+          <option value="1">1 inserter</option>
+          <option value="2">2 inserters</option>
+          <option value="3">3 inserters</option>
+          <option value="4">4 inserters</option>
         </select>
-        <span class="hint">seconds to land 100 sections + 1 capsule</span>
+        <span class="hint" id="secarmshint">time to land 100 sections + 1 capsule</span>
       </div>
       <div class="field">
         <label for="rt">Train round trip</label>
@@ -547,6 +559,17 @@ a{color:var(--steel);overflow-wrap:anywhere}
   var SLOTS = 500;        // rocket_capacity
   var PACK = 5;           // 1 packed section unpacks to 5
 
+  // A rocket needs 100 sections and 1 capsule, and every one of them is stack_size 1. An inserter
+  // can never carry more than one item of a stack-1 good, so hand size does nothing here and the
+  // feed is exactly swings x arm cycle. This used to be four hardcoded durations baked for a
+  // 26-tick arm, which stopped being true the moment Arm cycle became a setting.
+  var SECTION_ITEMS = 101;
+  // Bots instead: se-cargo-rocket-construction-helper fills an item-request-proxy in one wave,
+  // measured at 30 s. It polls on on_nth_tick(600), so 0-10 s passes before the request even
+  // exists - the event hook that would fire it instantly is commented out in 2.0.1. 35 s is the
+  // wave plus the mean poll wait.
+  var BOT_FEED = 35;
+
   // Inserter throughput, measured - see INSERTER_SPEED_REFERENCE.md:
   //   rot = angle_deg/14.4, ext = |rP-rD|/0.1, cycle = 2*floor(max(rot,ext))   [15 runs]
   // A belt on either side costs a FLAT +3.28 ticks, not a proportion. Measured over eight
@@ -640,7 +663,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
     return {
       thru:    num("thru", 0.001),
       stack:   num("stack", 1),
-      secarms: +$("secarms").value,
+      secarms: $("secarms").value,          // "bots", or a number of inserters
       pads:    num("pads", 1),
       geom:    num("geom", 1),
       hand:    num("hand", 1),
@@ -659,7 +682,10 @@ a{color:var(--steel);overflow-wrap:anywhere}
 
   function model(v){
     var C = SLOTS * v.stack;
-    var overhead = Math.max(LOCK, v.secarms);
+    var secArms = +v.secarms;                            // NaN when the answer is "bots"
+    var feed = secArms > 0 ? SECTION_ITEMS * v.geom / 60 / secArms : BOT_FEED;
+    // A feed faster than the ascent lockout is free - the sections queue while the pad is shut.
+    var overhead = Math.max(LOCK, feed);
 
     var ceiling  = v.hand * 60 / v.geom;
     var lane     = laneCap(v.belt);
@@ -746,7 +772,8 @@ a{color:var(--steel);overflow-wrap:anywhere}
     // the cell keeps producing. Simulation stalls ~0.1% at exactly that, so carry 20%.
     var bufStacks = Math.ceil(1.2 * overhead * v.thru / v.stack);
 
-    return {C:C, overhead:overhead, cycle:cycle, fill:fill, needRate:needRate, feasible:feasible,
+    return {C:C, overhead:overhead, feed:feed, secArms:secArms,
+            cycle:cycle, fill:fill, needRate:needRate, feasible:feasible,
             L:L, pads:pads, minPads:minPads, ceiling:ceiling, lane:lane,
             perBelt:perBelt, perStore:perStore, perFeed:perFeed,
             armsBelt:armsBelt, armsStore:armsStore, peak:peak, belts:belts,
@@ -771,6 +798,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
     // planet and piped into ground machines, which is why it belongs on a ground calculator.
     $("tankhint").textContent = +$("tank").value >= 100000
       ? "spaceship booster tank, on spaceship floor" : "plain storage tank";
+    $("secarmshint").textContent = !isFinite(m.feed) ? "time to land 100 sections + 1 capsule"
+      : m.secArms > 0
+        ? fmt(m.feed,1)+" s · "+SECTION_ITEMS+" swings ÷ "+m.secArms+" at "+fmt(v.geom,0)+
+          " t; stack 1, so hand size cannot help"
+        : BOT_FEED+" s · 30 s bot wave + the helper’s 0–10 s poll";
     $("padshint").textContent = !isFinite(m.minPads) ? "blank for the minimum"
       : !isFinite(v.pads) ? "auto: "+m.minPads
       : (!v.buf && v.pads < m.minPads) ? "under "+m.minPads+" — output shown is what you get"
