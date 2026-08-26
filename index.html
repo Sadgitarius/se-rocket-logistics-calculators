@@ -1025,7 +1025,6 @@ a{color:var(--steel)}
   $("btn_reset").addEventListener("click", function(){
     apply(DEFAULTS);
     try { localStorage.removeItem(STORE); } catch (err) {}
-    say("Reset to defaults");
   });
 
   $("file_import").addEventListener("change", function(e){
