@@ -46,6 +46,12 @@ rather than a rate, so neither follows the toggle), and **Train round trip** is 
 surplus or shortage into a wagon count. That last one is the sending side's own field, shown here
 too because both views size a train off it — edit it in either place and both follow.
 
+**Receiving rocket fuel** (default yes) adds the landings you never asked for. A site that does not
+refine its own fuel is fed by rocket, and those rockets land like any other — one capsule and
+100 × reusability sections each. The count is derived, not typed: it is the launch rate divided by
+the sending side's **Rockets out : in**, so at the default 100k trip one fuel rocket lands per four
+launches. Set it to no for a site with its own refineries.
+
 Each line has an **item picker**: start typing and it filters 750 items by icon and name, and
 picking one fills the stack size for you. Matching ignores case, spaces and punctuation and hits
 anywhere in the string, so `ironpl`, `plate` and `iron-plate` all find Iron plate. Anything the

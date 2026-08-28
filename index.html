@@ -647,6 +647,14 @@ a{color:var(--steel);overflow-wrap:anywhere}
         <input id="c_rt" type="number" value="180" min="10" step="10">
         <span class="hint">the same setting as the sending side</span>
       </div>
+      <div class="field">
+        <label for="c_fuel">Receiving rocket fuel</label>
+        <select id="c_fuel">
+          <option value="1" selected>Yes</option>
+          <option value="0">No</option>
+        </select>
+        <span class="hint" id="c_fuelhint">fuel rockets land here too</span>
+      </div>
     </div>
 
     <div class="rowsblock">
@@ -809,7 +817,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
   // re-render both; S_IDS and R_IDS belong to one side each. The Buffer toggles stay local - they
   // describe how that side is built, not the world it is built in.
   var G_IDS = ["belt","beltmult","adj","geom","hand","tier","beacon","reuse","wagon","tank",
-               "c_unit"];
+               "c_unit","c_fuel"];
   var S_IDS = ["thru","stack","trip","pads","env","secarms"];
 
   // Arm cycle is only a choice if you run a mod that makes it one. Vanilla SE gives you the
@@ -1250,20 +1258,27 @@ a{color:var(--steel);overflow-wrap:anywhere}
   // near reusability 1.0. Assume full cargo, where rocket_cost_p = 1 and a rocket costs 100.
   var SEC_PER_ROCKET = 100;
 
-  function cmodel(imp, exp, reuse, rt, wagon){
+  function cmodel(imp, exp, reuse, rt, wagon, fuelIn, ratio){
     var rockets = function(rows){
       return rows.reduce(function(t,r){
         return (r.rate > 0 && r.stack > 0) ? t + r.rate / (SLOTS * r.stack) : t;
       }, 0);
     };
-    var land = rockets(imp), launch = rockets(exp);
+    var cargoLand = rockets(imp), launch = rockets(exp);
+    // A site that does not refine its own fuel is fed by rockets, and those land here like any
+    // other - same capsule, same recovered sections. They are not in the import list because the
+    // user never chose them: the launch rate implies them. `ratio` is the sending side's
+    // "Rockets out : in", so both views answer with one number.
+    var fuelLand = (fuelIn && isFinite(ratio) && ratio > 0) ? launch / ratio : 0;
+    var land = cargoLand + fuelLand;
     var secIn  = SEC_PER_ROCKET * reuse * land;
     var secOut = SEC_PER_ROCKET * launch;
     var secNet = secIn - secOut;              // + surplus, - shortage, items/s
     var capNet = land - launch;               // one per rocket each way
     // The reusability at which sections break even. Above 1 it cannot be reached at all.
     var breakEven = land > 0 ? launch / land : Infinity;
-    return { land:land, launch:launch, secIn:secIn, secOut:secOut, secNet:secNet, capNet:capNet,
+    return { land:land, cargoLand:cargoLand, fuelLand:fuelLand,
+             launch:launch, secIn:secIn, secOut:secOut, secNet:secNet, capNet:capNet,
              breakEven:breakEven,
              wagPart: Math.abs(secNet) * rt / PACK / wagon,   // ship sections packed, 5 to a slot
              wagCap:  Math.abs(capNet) * rt / wagon };        // capsules are stack 1
@@ -1512,8 +1527,16 @@ a{color:var(--steel);overflow-wrap:anywhere}
     $("c_rt").value = $("rt").value;
     var reuse = num("reuse", 0), rt = num("rt", 1), wagon = num("wagon", 1);
     var ok = isFinite(reuse) && isFinite(rt) && isFinite(wagon);
-    var m = cmodel(ROWS.imp, ROWS.exp, reuse, rt, wagon);
+    // Same arithmetic the sending side prints as "Rockets out : in" - one fuel rocket lands per
+    // that many launches - so the two views can never disagree about it.
+    var v = read();
+    var ratio = SLOTS * 10 * refinery(v.tier, v.env, v.beacon).perItem / v.trip;
+    var fuelIn = $("c_fuel").value === "1";
+    var m = cmodel(ROWS.imp, ROWS.exp, reuse, rt, wagon, fuelIn, ratio);
     var live = ok && (m.land > 0 || m.launch > 0);
+    $("c_fuelhint").textContent = !fuelIn ? "the site refines its own"
+      : isFinite(ratio) && ratio > 0 ? "1 fuel rocket lands per " + fmt(ratio,1) + " launches"
+      : "fuel rockets land here too";
     var f = function(n,d){ return live && isFinite(n) ? fmt(n,d) : "—"; };
 
     // Parts are shown as PACKAGED parts throughout - 5 rocket sections to one packed item
@@ -1537,6 +1560,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
       ["g1", "Packaged parts train", f(m.wagPart,2), live ? (surplus ? "wagons out" : "wagons in") : ""],
       ["g1", "Capsule train", f(m.wagCap,3), live ? (capSurplus ? "wagons out" : "wagons in") : ""],
       ["g2", "Landings", f(m.land*60,2), "/min"],
+      ["g2", "Fuel landings", fuelIn ? f(m.fuelLand*60,2) : "—", fuelIn ? "/min" : ""],
       ["g2", "Launches", f(m.launch*60,2), "/min"],
       ["g2", "Packaged parts recovered", f(m.secIn*U/PACK), us],
       ["g2", "Packaged parts burned", f(m.secOut*U/PACK), us],
@@ -1650,7 +1674,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
     $("rt").value = $("c_rt").value; renderAll(); queueSave();
   });
   G_IDS.forEach(function(id){ $(id).addEventListener("input", renderAll); });
-  S_IDS.forEach(function(id){ $(id).addEventListener("input", render); });
+  // Sending-side inputs repaint the composite too: it derives its fuel-rocket landings from the
+  // same "Rockets out : in" arithmetic, which reads Fuel per trip and Location from this panel.
+  S_IDS.forEach(function(id){
+    $(id).addEventListener("input", function(){ render(); crender(); });
+  });
   R_IDS.forEach(function(id){ $(id).addEventListener("input", rrender); });
   $("buf").addEventListener("change", render);
   $("r_buf").addEventListener("change", rrender);
@@ -1673,7 +1701,8 @@ a{color:var(--steel);overflow-wrap:anywhere}
     global: { beltSpeed:"belt", beltStacking:"beltmult", adjustableInserters:"adj",
               armCycle:"geom", handSize:"hand", moduleTier:"tier", beaconTier:"beacon",
               reusability:"reuse", wagonSize:"wagon", fuelTankSize:"tank",
-              trainRoundTrip:"rt", rateUnit:"c_unit" },
+              trainRoundTrip:"rt", rateUnit:"c_unit",
+              receivingRocketFuel:"c_fuel" },
     send:   { throughput:"thru", stackSize:"stack", item:"item", itemKey:"itemkey",
               fuelPerTrip:"trip", silos:"pads", location:"env", sectionFeed:"secarms",
               buffer:"buf" },
