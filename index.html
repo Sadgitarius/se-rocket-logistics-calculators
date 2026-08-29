@@ -605,6 +605,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
         <span class="hint" id="r_padshint">blank for the minimum</span>
       </div>
       <div class="field">
+        <label for="r_arms">Arms · pad → storage</label>
+        <input id="r_arms" type="number" value="" min="1" step="1" placeholder="auto">
+        <span class="hint" id="r_armshint">blank for the minimum</span>
+      </div>
+      <div class="field">
         <label for="r_miss">Missed rockets</label>
         <input id="r_miss" type="number" value="1" min="0" step="1">
         <span class="hint" id="r_misshint">how many late arrivals the reserve covers</span>
@@ -617,10 +622,10 @@ a{color:var(--steel);overflow-wrap:anywhere}
       <div class="eyebrow" style="margin-bottom:9px">One landing interval — <span id="r_cyclelen" class="mono"></span></div>
       <div class="bar" id="r_bar"></div>
       <div class="legend">
-        <span><i style="background:var(--flare)"></i>Pad draining into storage</span>
-        <span><i style="background:var(--steel)"></i>Storage feeding the belts alone</span>
+        <span><i style="background:var(--flare)"></i>Pad emptying — the only part you control</span>
+        <span><i style="background:#7a5a86"></i>Ordered, waiting — ascent 18.33 s + drop 5 s + 1 s to find a launcher</span>
       </div>
-      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">capacity = consumption × missed rockets × 23.33 s + rocket × (drain − consumption) ÷ drain</p>
+      <p class="mono" style="margin-top:12px;font-size:.76rem;color:var(--ink-3)">the pad orders only once it is empty, so cycle = rocket ÷ arm drain + 24.33 s · throughput = pads × rocket ÷ cycle</p>
     </div>
   </div>
 </section>
@@ -1116,66 +1121,95 @@ a{color:var(--steel);overflow-wrap:anywhere}
   // piles the difference into storage, so the peak is the reserve plus that transient. Drain at
   // exactly R and the transient vanishes but the pad never clears; drain instantly and you must
   // warehouse an entire rocket. That trade is the whole design.
-  var R_IDS = ["r_thru","r_stack","r_pads","r_miss"];
+  var R_IDS = ["r_thru","r_stack","r_pads","r_miss","r_arms"];
   var PAD_SLOTS = 610;                    // rocket_capacity + 110, rocket-landing-pad.lua:31
 
-  // Both of these used to be inputs and neither should have been - they are engine constants,
-  // not preferences. scripts/launchpad.lua:43,47:
+  // Engine constants, not preferences. scripts/launchpad.lua:43,47:
   //   time_takeoff_finish_ascent = 1100 t = 18.33 s
   //   time_landing_cargopod_last =  300 t =  5.00 s
   // tick_journey_transition sets land_timer = 0 the moment ascent ends, so there is no travel
-  // time between surfaces - a replacement rocket is ASCENT + LAND from launch to cargo down.
-  var ASCENT = 1100/60, LAND = 300/60, RECOVER = ASCENT + LAND;
-  // A missed slot is covered by the next rocket launching immediately, so ONE recovery - 23.33 s -
-  // is the exposure per rocket that fails to show. How many consecutive misses to insure against
-  // is a judgement call, not a constant, so it is the "Missed rockets" input: gap = misses x
-  // RECOVER. At 0 the reserve vanishes and only the drain transient is left, which is the correct
-  // answer for a line you trust completely.
+  // time between surfaces. On top of the flight, the pad's request takes up to a second to find
+  // a launcher; the worst case is used, because this whole model exists to guarantee a rate.
+  var ASCENT = 1100/60, LAND = 300/60, FIND = 1;
+  var LATENCY = ASCENT + LAND + FIND;              // 24.33 s, request -> cargo on the ground
 
+  // THE PAD REQUESTS WHEN IT IS EMPTY. That single fact drives everything here, and getting it
+  // wrong is what made the old model wrong: it assumed rockets arrive on a fixed C/R cadence and
+  // that draining merely has to fit inside the gap. It does not. Nothing is ordered until the pad
+  // clears, so
+  //     pad cycle  = C/drain + LATENCY
+  //     throughput = pads x C / cycle
+  // and the drain rate SETS the delivery rate rather than following it. A pad that drains slowly
+  // stretches its own cycle, orders late, and starves the belts by exactly that stretch - which
+  // is why a build can be short of target with a buffer that never fills and no rocket ever
+  // "missing". Draining faster is not a luxury here, it is the throughput.
   function rmodel(v){
     var C = SLOTS * v.stack;                       // items delivered per rocket
-    var interval = C / v.thru;                     // seconds between landings, all pads together
-    var minPads  = Math.max(1, Math.ceil(LAND / interval));
+    var interval = C / v.thru;                     // seconds one delivery has to cover, at target
+    // A pad contributes C every (drain + LATENCY). Even with an instant drain one pad cannot beat
+    // C/LATENCY, so below that many pads the target is unreachable at any arm count.
+    var minPads  = Math.max(1, Math.floor(LATENCY / interval) + 1);
     var pads     = isFinite(v.pads) ? Math.max(1, Math.round(v.pads)) : minPads;
-    var perPad   = interval * pads;                // one pad only sees every Nth rocket
 
-    // Use the whole window the pad is idle for. Draining slower is impossible - the next rocket
-    // needs the slots - and draining faster only buys transient storage nobody wants.
-    var clear    = Math.max(0.1, perPad - LAND);
-    var gap      = v.miss * RECOVER;
-    var drain    = C / clear;                      // pad -> storage rate needed
     var perArm   = v.hand * 60 / v.geom;                                 // container to container
     var lane     = laneCap(v.belt);
     var perBelt  = Math.min(v.hand * 60 / (v.geom + BELT_TICKS), lane);  // container to belt
 
-    var armsIn   = Math.ceil(drain / perArm);      // per pad
+    // Time this pad may spend draining if the whole set is to hold the target rate.
+    var window   = pads * interval - LATENCY;
+    var feasible = window > 0;
+    // When the target is out of reach for this pad count there is no window to solve for - the
+    // rate only approaches C/LATENCY as the drain goes to infinity. Recommending 1 arm there
+    // would report a rate far below what the pad can really do, so fall back to draining in a
+    // tenth of the latency: near the ceiling, and a big enough arm bank to make the point that
+    // the pad count, not the arms, is what is wrong.
+    var drain    = C / (feasible ? window : LATENCY * 0.1);
+    var minArms  = Math.ceil(drain / perArm);
+    var armsIn   = isFinite(v.arms) ? Math.max(1, Math.round(v.arms)) : minArms;
+    var installed= armsIn * perArm;                    // what the built arms actually move
+    var padClear = C / installed;                      // how long this pad takes to empty
+    var cycle    = padClear + LATENCY;                 // drain, then order, then wait
+    var achieved = pads * C / cycle;                   // the rate the build really sustains
+    var short    = Math.max(0, v.thru - achieved);
+
     var armsOut  = Math.ceil(v.thru / perBelt);    // total, storage onto belts
     var beltsOut = Math.ceil(v.thru / v.belt);
 
-    var reserve  = v.thru * gap;                            // never consumed unless a rocket slips
-    var transient= C * Math.max(0, drain - v.thru) / drain;  // what the fast drain piles up
-    var capacity = reserve + transient;
+    // Storage. Pads run staggered, so k is how many are draining at any instant; it is never a
+    // whole number, and the level falls whenever the floor of it is draining and rises on the
+    // ceiling. Deliveries equal consumption in steady state, so this swing is all the normal
+    // cycle ever needs - everything above it is insurance.
+    var rate     = Math.min(v.thru, achieved);
+    var k        = C / (installed * (C / rate));   // = rate/installed, expected pads draining
+    var lo       = Math.floor(k), frac = k - lo;
+    var swing    = Math.max(0, rate - lo * installed) * (1 - frac) * (pads * C / rate);
+    // A miss costs one whole request-to-delivery latency, during which storage carries the belts
+    // alone. Deliberately conservative for pads > 1, where the others keep feeding.
+    var gap      = v.miss * LATENCY;
+    var reserve  = rate * gap;
+    var capacity = swing + reserve;
 
     // What comes back down alongside the cargo. Sections stack to 1, so slots == items, and the
     // pad reserves PAD_SLOTS - SLOTS = 110 of them for the worst case: 100 sections at
     // reusability 1.0, the capsule, and 9 spare. What actually lands is set by the research.
-    var landings = v.thru / C;
+    var landings = rate / C;
     // Without storage the pad's own 500 cargo slots are the buffer, and they are empty for the
     // whole landing sequence - the last cargo pod is not down until LAND seconds in. The belts
-    // therefore stop dead for LAND out of every interval, and a downstream that cannot pause
-    // only gets the rest of it.
-    var uptime = Math.max(0, (interval - LAND) / interval);
-    var eff    = v.buf ? v.thru : v.thru * uptime;
+    // therefore stop dead for LAND out of every cycle, and a downstream that cannot pause only
+    // gets the rest of it.
+    var uptime = Math.max(0, (cycle - LAND) / cycle);
+    var eff    = v.buf ? rate : rate * uptime;
 
     var hw       = (100 * v.reuse + 1) * landings;   // sections + capsule, slots/s, loose
     var packed   = 100 * v.reuse * landings / PACK;  // the sections, repacked 5 to a slot
     var caps     = landings;                         // one capsule per rocket, stack size 1
-    var feasible = clear > 1;
-    return { C:C, interval:interval, perPad:perPad, pads:pads, minPads:minPads, drain:drain,
-             clear:clear, gap:gap, uptime:uptime, eff:eff, lane:lane,
+    return { C:C, interval:interval, pads:pads, minPads:minPads, drain:drain,
+             window:window, gap:gap, uptime:uptime, eff:eff, lane:lane, installed:installed,
+             minArms:minArms, padClear:padClear, cycle:cycle, achieved:achieved, short:short,
+             latency:LATENCY, rate:rate,
              perArm:perArm, perBelt:perBelt, armsIn:armsIn,
              armsOut:armsOut, beltsOut:beltsOut,
-             reserve:reserve, transient:transient, capacity:capacity,
+             reserve:reserve, swing:swing, capacity:capacity,
              hw:hw, packed:packed, caps:caps,
              feasible:feasible };
   }
@@ -1184,6 +1218,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
     var num = function(id, min){ var n = parseFloat($(id).value); return isFinite(n) && n >= min ? n : NaN; };
     // Arm cycle, hand size, reusability and the belt come from the Global settings panel.
     return { thru:num("r_thru",0.001), stack:num("r_stack",1), pads:num("r_pads",1),
+             arms:num("r_arms",1),
              geom:num("geom",1), hand:num("hand",1), reuse:num("reuse",0),
              belt:+$("belt").value * +$("beltmult").value, miss:num("r_miss",0),
              buf:$("r_buf").checked };
@@ -1198,11 +1233,21 @@ a{color:var(--steel);overflow-wrap:anywhere}
     var st = function(n){ return ok && isFinite(n) ? fmt(Math.ceil(n / v.stack),0) : "—"; };
 
     repaintItem("r_item");
-    $("r_padshint").textContent = ok ? (isFinite(v.pads) ? "minimum is "+m.minPads : "auto: "+m.minPads)
-                                     : "blank for the minimum";
+    $("r_padshint").textContent = !ok ? "blank for the minimum"
+      : (isFinite(v.pads) ? "minimum is " + m.minPads : "auto: " + m.minPads)
+        + " · one pad caps at " + fmt(m.C/LATENCY,0) + " /s";
+    // Say what the count buys. Under request-on-empty the drain time is not slack inside a fixed
+    // gap - it is the part of the cycle you control, so this is where throughput is won or lost.
+    $("r_armshint").textContent = !ok ? "blank for the minimum"
+      : !m.feasible ? "add a pad first"
+      : "minimum " + m.minArms + " · empties in " + fmt(m.padClear,1) + " s of the "
+        + fmt(m.window,1) + " s this pad can afford";
     $("r_misshint").textContent = !isFinite(v.miss) ? "how many late arrivals the reserve covers"
       : v.miss === 0 ? "no reserve — trusts the schedule exactly"
-      : "reserve covers " + fmt(v.miss*RECOVER,1) + " s · one rocket is " + fmt(RECOVER,1) + " s";
+      // One miss costs a whole request-to-delivery latency, and that assumes a rocket is already
+      // standing ready at the silo. If one has to be built first, the real exposure is a silo
+      // cycle and this is optimistic.
+      : "covers " + fmt(v.miss*LATENCY,1) + " s, assuming a rocket stands ready";
 
     // Four more computed-but-dark cells. m.reserve and m.gap are the insurance half of
     // m.capacity, m.clear and m.drain the mechanics that produce the other half - all four are
@@ -1210,15 +1255,22 @@ a{color:var(--steel);overflow-wrap:anywhere}
     // Without a buffer there is no storage to drain into - the pad's own 500 slots are the
     // buffer - so the pad → storage arm does not exist and the belt head reaches into the pad
     // itself. Same arm, same rate, different container.
+    // Achieved rate leads, because it is the number that was missing: the old readout silently
+    // assumed you got the throughput you typed, which is exactly how a build that could never
+    // reach it looked healthy.
+    var hit = ok && m.feasible && m.short < 0.5;
     var cells = [
-      ["hero g1","Pads", f(m.pads,0), ""],
+      ["hero g1" + (ok ? (hit ? " good" : " bad") : ""),
+       hit ? "Throughput held" : "Throughput short", f(m.achieved,0), "/s"],
+      ["g1","Pads", f(m.pads,0), ""],
       (v.buf ? ["g1","Buffer storage", st(m.capacity), "stacks"]
              : ["g1","Effective output", f(m.eff,0), "/s"])
     ];
     if (v.buf) cells.push(["g1","Arms · pad → storage", f(m.armsIn,0), "per pad"]);
     cells = cells.concat([
       ["g1", v.buf ? "Arms · storage → belt" : "Arms · pad → belt", f(m.armsOut,0), ""],
-      ["g2","Landing interval", f(m.interval,1), "s"],
+      ["g2","Pad cycle", f(m.cycle,1), "s"],
+      ["g2","Landing interval", f(m.cycle/m.pads,1), "s"],
       ["g2","Belts out", f(m.beltsOut,0), ""],
       // Same order as the sending side's last two cells, and no longer overlapping: the sections
       // are the "Packaged parts" figure, so the other cell is the capsules alone - one per rocket.
@@ -1232,19 +1284,19 @@ a{color:var(--steel);overflow-wrap:anywhere}
              c[2] + (c[3] && !dash ? '<u>'+c[3]+'</u>' : '')+'</div></div>';
     }).join("");
 
-    $("r_cyclelen").textContent = ok ? fmt(m.interval,1)+" s" : "—";
+    $("r_cyclelen").textContent = ok ? fmt(m.cycle,1)+" s" : "—";
     if(!ok){ $("r_bar").innerHTML = ""; return; }
 
-    // the bar is the interval split into the draining phase and the coasting phase
-    var drainT = Math.min(m.clear, m.interval), coast = Math.max(0, m.interval - drainT);
-    var segs = [["fill",  drainT, "draining "+fmt(drainT,1)+"s"],
-                ["coast", coast,  "coasting "+fmt(coast,1)+"s"]];
+    // One PAD's cycle, not a landing interval: it drains, then it orders and waits. The waiting
+    // half is fixed by the engine, so the only part any build can shrink is the draining half.
+    var segs = [["fill",  m.padClear, "emptying "+fmt(m.padClear,1)+"s"],
+                ["lock",  LATENCY,    "waiting "+fmt(LATENCY,1)+"s"]];
     $("r_bar").innerHTML = m.feasible ? segs.map(function(s){
-      var pct = 100*s[1]/m.interval;
+      var pct = 100*s[1]/m.cycle;
       return pct <= 0 ? "" : '<div class="seg '+s[0]+'" style="flex:0 0 '+pct.toFixed(3)+'%">'+
         (pct > 13 ? s[2] : "")+'</div>';
-    }).join("") : '<div class="seg bad" style="flex:1 1 0">impossible — landings closer than the '+
-      fmt(LAND,1)+' s cargo drop</div>';
+    }).join("") : '<div class="seg bad" style="flex:1 1 0">impossible — one pad cannot beat '+
+      fmt(m.C/LATENCY,0)+' /s, add pads</div>';
   }
 
   // ================= composite cell =================
@@ -1707,7 +1759,8 @@ a{color:var(--steel);overflow-wrap:anywhere}
               fuelPerTrip:"trip", silos:"pads", location:"env", sectionFeed:"secarms",
               buffer:"buf" },
     recv:   { consumption:"r_thru", stackSize:"r_stack", item:"r_item", itemKey:"r_itemkey",
-              pads:"r_pads", missedRockets:"r_miss", buffer:"r_buf" }
+              pads:"r_pads", missedRockets:"r_miss", buffer:"r_buf",
+              padToStorageArms:"r_arms" }
   };
 
   function say(msg, bad){

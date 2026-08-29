@@ -46,6 +46,12 @@ rather than a rate, so neither follows the toggle), and **Train round trip** is 
 surplus or shortage into a wagon count. That last one is the sending side's own field, shown here
 too because both views size a train off it — edit it in either place and both follow.
 
+**Arms · pad → storage** is an input like Pads: blank takes the minimum that clears the pad inside
+the landing window, and any number above that is yours. It is worth overriding, because emptying
+the pad sooner is what stops a late rocket queueing behind a full one — and because the buffer
+below is sized on the arms you actually build. More arms means *more* storage, not less: the items
+do not vanish, they move out of the pad, which was buffering them, and into storage.
+
 **Receiving rocket fuel** (default yes) adds the landings you never asked for. A site that does not
 refine its own fuel is fed by rocket, and those rockets land like any other — one capsule and
 100 × reusability sections each. The count is derived, not typed: it is the launch rate divided by
@@ -111,19 +117,37 @@ helper's `on_nth_tick(600)` poll adding 0–10 s before the request even appears
 
 ### Receiving side
 
-A rocket lands, dumps 500 slots into a pad, and leaves. The page tells you:
+**The pad orders a rocket only once it is empty.** Everything on this side follows from that, and
+it is the opposite of the obvious model. Rockets do not arrive on a fixed cadence with draining
+fitted into the gap — nothing is ordered until the pad clears, so
 
-- **how many landing pads** the consumption needs,
-- **how much buffer storage** to keep outside the pad so a late rocket never starves the belts,
-- **how many arms `pad → storage`** (this side has to be faster than `storage → belt`) and
-  **`storage → belt`** — with no buffer there is no storage, so the first cell disappears and the
-  second becomes `pad → belt`,
-- **landing interval**, belts out, and the packaged-parts/capsule return rate your reusability implies.
+```
+pad cycle  = rocket ÷ arm drain + 24.33 s      (ascent 18.33 + cargo drop 5 + 1 s to find a launcher)
+throughput = pads × rocket ÷ pad cycle
+```
 
-A punctual line needs no reserve at all — over one interval, delivery and consumption cancel
-exactly. Every stack you keep is insurance against a rocket arriving late, so **Missed rockets**
-is what sets the floor. One missed rocket costs one launch-to-landing recovery, 23.33 s of
-consumption. Set it to 0 and the reserve disappears, leaving only what the fast pad drain piles up.
+The drain rate **sets** the delivery rate rather than following it. A pad that empties slowly
+stretches its own cycle, orders late, and starves the belts by exactly that stretch — which is how
+a build can sit permanently under target with a buffer that never fills and no rocket ever
+"missing". Draining faster is not headroom here, it is the throughput.
+
+Two consequences worth knowing before you build:
+
+- **One pad has a hard ceiling of `rocket ÷ 24.33 s`** — 2,055/s at stack 100 — that no number of
+  inserters can beat, because the pad spends that whole time waiting. Past it you need more pads,
+  and the page says so.
+- **More pads means dramatically fewer inserters.** One pad must cram all its draining into
+  `interval − 24.33 s`; two pads alternate and each gets a far longer window. At 1,700/s of stack-100
+  tablets that is 1 pad × 21 arms versus 2 pads × 4 — and the two-pad build needs less storage too.
+
+The readout leads with **Throughput held / short**, the rate the build actually sustains, because
+the old page silently assumed you got the number you typed.
+
+**Buffer storage** covers the swing while pads are between deliveries, plus **Missed rockets** ×
+24.33 s of consumption as insurance. That reserve assumes a rocket is already standing ready at the
+silo; if one has to be built first, the real exposure is a whole silo cycle. Note the reserve is
+one-shot — in steady state deliveries equal consumption exactly, so a spent reserve does not refill
+itself until the sending side over-delivers.
 
 ## The Buffer toggles
 
