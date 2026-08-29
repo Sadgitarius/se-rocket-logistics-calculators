@@ -72,7 +72,12 @@ class Sources:
         return None
 
     def listdir_cfgs(self):
-        """Every locale/en/*.cfg in base and in every mod."""
+        """Every locale/en/*.cfg, base first and mods after.
+
+        Order is load-bearing: a mod renaming a base item must win. AAI Industry turns
+        electric-engine-unit into "Big electric motor" and engine-unit into "Multi-cylinder
+        engine", and the caller has to overwrite rather than setdefault for that to take.
+        """
         for mod, d in self.dirs.items():
             loc = os.path.join(d, "locale", "en")
             if os.path.isdir(loc):
@@ -99,7 +104,10 @@ for text in src.listdir_cfgs():
             section = line[1:-1]
         elif "=" in line and section:
             k, v = line.split("=", 1)
-            loc.setdefault(section + "." + k.strip(), v.strip())
+            # Last writer wins, because listdir_cfgs yields base before mods. setdefault had it
+            # backwards and made the base game unoverridable, so every item a mod renamed kept
+            # its vanilla name in the picker.
+            loc[section + "." + k.strip()] = v.strip()
 print("locale keys:", len(loc))
 
 CTRL = re.compile(r"__[A-Z_]+__|\[[^\]]*\]")
