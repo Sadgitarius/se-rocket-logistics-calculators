@@ -660,6 +660,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
         </select>
         <span class="hint" id="c_fuelhint">fuel rockets land here too</span>
       </div>
+      <div class="field">
+        <label for="c_trip">Fuel per trip</label>
+        <input id="c_trip" type="number" value="100000" min="1000" step="1000">
+        <span class="hint">this cell's own trip · same surface is a few k</span>
+      </div>
     </div>
 
     <div class="rowsblock">
@@ -822,7 +827,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
   // re-render both; S_IDS and R_IDS belong to one side each. The Buffer toggles stay local - they
   // describe how that side is built, not the world it is built in.
   var G_IDS = ["belt","beltmult","adj","geom","hand","tier","beacon","reuse","wagon","tank",
-               "c_unit","c_fuel"];
+               "c_unit","c_fuel","c_trip"];
   var S_IDS = ["thru","stack","trip","pads","env","secarms"];
 
   // Arm cycle is only a choice if you run a mod that makes it one. Vanilla SE gives you the
@@ -1580,9 +1585,18 @@ a{color:var(--steel);overflow-wrap:anywhere}
     var reuse = num("reuse", 0), rt = num("rt", 1), wagon = num("wagon", 1);
     var ok = isFinite(reuse) && isFinite(rt) && isFinite(wagon);
     // Same arithmetic the sending side prints as "Rockets out : in" - one fuel rocket lands per
-    // that many launches - so the two views can never disagree about it.
+    // that many launches - but off THIS cell's own trip cost, not the sending side's.
+    //
+    // That distinction is the whole reason this field exists. Fuel per trip is pure delta-v, so a
+    // hop to the same surface costs a few thousand where a cross-system shot costs 150k. One fuel
+    // rocket carries 5,000 rocket fuel, which is 400,000 liquid at prod-9, so at 100k a trip it
+    // covers 4 launches and at 4k a trip it covers 100. Fuel landings therefore go from 20% of all
+    // landings to under 1%, and they are landings: they carry back a capsule and their share of
+    // rocket sections like any other rocket. Reading the sending side's number here quietly
+    // credited a cell with fuel rockets it never receives, which is enough to turn a real parts
+    // deficit into a printed surplus.
     var v = read();
-    var ratio = SLOTS * 10 * refinery(v.tier, v.env, v.beacon).perItem / v.trip;
+    var ratio = SLOTS * 10 * refinery(v.tier, v.env, v.beacon).perItem / num("c_trip", 1);
     var fuelIn = $("c_fuel").value === "1";
     var m = cmodel(ROWS.imp, ROWS.exp, reuse, rt, wagon, fuelIn, ratio);
     var live = ok && (m.land > 0 || m.launch > 0);
@@ -1727,7 +1741,8 @@ a{color:var(--steel);overflow-wrap:anywhere}
   });
   G_IDS.forEach(function(id){ $(id).addEventListener("input", renderAll); });
   // Sending-side inputs repaint the composite too: it derives its fuel-rocket landings from the
-  // same "Rockets out : in" arithmetic, which reads Fuel per trip and Location from this panel.
+  // same "Rockets out : in" arithmetic, which still reads Location from this panel. Fuel per trip
+  // is the exception - the composite cell has its own, because it is a different site.
   S_IDS.forEach(function(id){
     $(id).addEventListener("input", function(){ render(); crender(); });
   });
@@ -1754,7 +1769,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
               armCycle:"geom", handSize:"hand", moduleTier:"tier", beaconTier:"beacon",
               reusability:"reuse", wagonSize:"wagon", fuelTankSize:"tank",
               trainRoundTrip:"rt", rateUnit:"c_unit",
-              receivingRocketFuel:"c_fuel" },
+              receivingRocketFuel:"c_fuel", compositeFuelPerTrip:"c_trip" },
     send:   { throughput:"thru", stackSize:"stack", item:"item", itemKey:"itemkey",
               fuelPerTrip:"trip", silos:"pads", location:"env", sectionFeed:"secarms",
               buffer:"buf" },
